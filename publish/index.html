@@ -1,0 +1,1740 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Market History Lab - Options Simulator</title>
+    <meta name="description" content="Market History Lab is an Indian options strategy builder, paper trading simulator, option chain dashboard and learning lab for Nifty, Bank Nifty, Sensex and FinNifty.">
+    <meta name="robots" content="index, follow">
+    <meta name="google-site-verification" content="uSvSZ14WZBY9VDulg9mfHdu15kjoeema4Ot9y-Rg-2U">
+    <meta property="og:title" content="Market History Lab">
+    <meta property="og:description" content="Build options strategies, test paper trades and learn payoff logic in a clean Indian market dashboard.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://markethistorylab.netlify.app/">
+    <link rel="icon" href="data:,">
+    <style>
+      :root {
+        --bg: #eef7f5;
+        --surface: #ffffff;
+        --surface-2: #f5fbfa;
+        --ink: #132321;
+        --muted: #627570;
+        --line: #d9e8e4;
+        --accent: #087c73;
+        --accent-2: #11a694;
+        --accent-soft: #e0f5f2;
+        --green: #0d9f68;
+        --green-soft: #dff7ec;
+        --red: #d84b4b;
+        --red-soft: #fde7e7;
+        --amber: #bd7b00;
+        --shadow: 0 14px 34px rgba(27, 67, 61, .10);
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at top left, #d6f3ed 0, var(--bg) 320px);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button, select, input {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        font: inherit;
+      }
+
+      button { padding: 0 13px; cursor: pointer; font-weight: 750; }
+      select, input { padding: 0 10px; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { margin: 0; font-size: clamp(22px, 3vw, 34px); letter-spacing: 0; }
+      h2 { margin-bottom: 10px; font-size: 20px; letter-spacing: 0; }
+      h3 { margin-bottom: 8px; font-size: 15px; letter-spacing: 0; }
+      p { color: var(--muted); line-height: 1.45; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+      th { color: var(--muted); background: var(--surface-2); font-size: 12px; position: sticky; top: 0; z-index: 1; }
+      th:nth-child(2), td:nth-child(2) { text-align: center; }
+
+      .app {
+        min-height: 100vh;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: grid;
+        grid-template-columns: minmax(220px, 320px) minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 18px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255,255,255,.92);
+        backdrop-filter: blur(14px);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #087c73, #13b49f);
+        color: white;
+        font-weight: 900;
+      }
+
+      .brand strong { display: block; font-size: 17px; }
+      .brand span { display: block; color: var(--muted); font-size: 12px; font-weight: 650; }
+
+      .nav {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .nav button {
+        border-color: transparent;
+        background: transparent;
+        color: #31504b;
+      }
+
+      .nav button.active {
+        background: var(--accent-soft);
+        color: var(--accent);
+        border-color: #bfe8e2;
+      }
+
+      .account {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+      }
+
+      .user-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface-2);
+        color: #31504b;
+        font-weight: 800;
+      }
+
+      .credit-pill {
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 0 6px;
+        align-items: center;
+        padding: 7px 10px;
+        border-radius: 10px;
+        background: #073f3a;
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .credit-pill span {
+        grid-column: 1 / -1;
+        font-size: 11px;
+        color: #bfeee7;
+        font-weight: 700;
+      }
+
+      .primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .secondary {
+        border-color: #bfe8e2;
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .ghost {
+        background: transparent;
+      }
+
+      .shell {
+        width: min(1540px, calc(100% - 28px));
+        margin: 18px auto 40px;
+      }
+
+      .banner {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: center;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: linear-gradient(135deg, #ffffff, #e8f7f4);
+        box-shadow: var(--shadow);
+      }
+
+      .banner p { margin: 6px 0 0; }
+      .status-row, .tool-row, .metric-row, .tabs, .filters, .button-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .metric-row {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(140px, 1fr));
+      }
+
+      .metric {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 18px;
+      }
+
+      .positive { color: var(--green); }
+      .negative { color: var(--red); }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        background: var(--surface-2);
+      }
+
+      .panel-body {
+        padding: 16px;
+      }
+
+      .page {
+        display: none;
+        margin-top: 18px;
+      }
+
+      .page.active { display: block; }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: minmax(420px, 42%) minmax(0, 1fr);
+        gap: 16px;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .tool-row {
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .input-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 0 11px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .chip.active {
+        border-color: #a7ded5;
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .expiry-strip {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(95px, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .expiry {
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-2);
+        cursor: pointer;
+        text-align: center;
+        font-weight: 800;
+      }
+
+      .expiry small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .expiry.active {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .chain-meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .mini-card {
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface-2);
+      }
+
+      .mini-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .chain-scroll {
+        max-height: 560px;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .atm { background: #d9f1ef; }
+      .itm { background: #faf6ea; }
+      .ltp { font-variant-numeric: tabular-nums; font-weight: 750; }
+      .oi-bar {
+        display: inline-block;
+        height: 5px;
+        min-width: 16px;
+        margin-left: 8px;
+        border-radius: 999px;
+        background: var(--green);
+        vertical-align: middle;
+        opacity: .8;
+      }
+      .call-oi { background: var(--red); }
+
+      .strategy-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 14px;
+      }
+
+      .strategy-card {
+        min-height: 166px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+      }
+
+      .strategy-card:hover {
+        transform: translateY(-2px);
+        border-color: #a7ded5;
+        box-shadow: var(--shadow);
+      }
+
+      .strategy-card.active {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(8,124,115,.12), var(--shadow);
+      }
+
+      .payoff {
+        display: block;
+        width: 100%;
+        height: 112px;
+        background: #f7fbfa;
+      }
+
+      .strategy-card h3 {
+        padding: 11px;
+        text-align: center;
+      }
+
+      .basket-table td:first-child, .basket-table th:first-child { text-align: left; }
+      .row-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .simulator-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        gap: 16px;
+      }
+
+      .chart-box {
+        min-height: 360px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: linear-gradient(180deg, #ffffff, #f4fbfa);
+        overflow: hidden;
+      }
+
+      .chart-svg {
+        display: block;
+        width: 100%;
+        height: 360px;
+      }
+
+      .trade-ticket {
+        display: grid;
+        gap: 10px;
+      }
+
+      .trade-ticket label {
+        display: grid;
+        gap: 5px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .summary-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .summary-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface-2);
+      }
+
+      .lesson {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+      }
+
+      .lesson strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .empty {
+        padding: 18px;
+        text-align: center;
+        color: var(--muted);
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: none;
+        place-items: center;
+        padding: 16px;
+        background: rgba(7, 34, 31, .42);
+      }
+
+      .modal.active { display: grid; }
+
+      .modal-card {
+        width: min(440px, 100%);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: 0 24px 80px rgba(7, 34, 31, .28);
+        overflow: hidden;
+      }
+
+      .modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        border-bottom: 1px solid var(--line);
+        background: var(--surface-2);
+      }
+
+      .modal-body {
+        display: grid;
+        gap: 12px;
+        padding: 16px;
+      }
+
+      .modal-body label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .auth-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .auth-tabs button.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      .auth-message {
+        min-height: 20px;
+        color: var(--red);
+        font-weight: 750;
+      }
+
+      @media (max-width: 1180px) {
+        .topbar { grid-template-columns: 1fr; }
+        .nav { justify-content: flex-start; }
+        .account { justify-content: flex-start; flex-wrap: wrap; }
+        .grid-2, .simulator-layout { grid-template-columns: 1fr; }
+        .strategy-grid { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
+      }
+
+      @media (max-width: 760px) {
+        .shell { width: min(100% - 16px, 1540px); margin-top: 10px; }
+        .banner { grid-template-columns: 1fr; }
+        .metric-row, .grid-3, .chain-meta { grid-template-columns: 1fr; }
+        .strategy-grid { grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 10px; }
+        .expiry-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .nav button { flex: 1 1 calc(50% - 6px); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">M</div>
+          <div>
+            <strong>Market History Lab</strong>
+            <span>Options simulator for Indian markets</span>
+          </div>
+        </div>
+        <nav class="nav" id="nav">
+          <button class="active" data-page="home" type="button">Home</button>
+          <button data-page="builder" type="button">Builder</button>
+          <button data-page="basket" type="button">Basket</button>
+          <button data-page="simulator" type="button">Simulator</button>
+          <button data-page="data" type="button">Data</button>
+          <button data-page="broker" type="button">Broker</button>
+          <button data-page="analytics" type="button">Analytics</button>
+          <button data-page="learning" type="button">Learning</button>
+        </nav>
+        <div class="account">
+          <div class="credit-pill"><strong id="creditCount">25</strong><span>Free credits</span></div>
+          <button class="secondary" data-page="plans" type="button">Plans</button>
+          <span class="user-pill" id="userPill">Guest</span>
+          <button class="secondary" id="loginOpen" type="button">Login</button>
+          <button class="ghost" id="logoutBtn" type="button" hidden>Logout</button>
+          <button class="primary" data-page="builder" type="button">Start Builder</button>
+        </div>
+      </header>
+
+      <main class="shell">
+        <section class="banner" id="homeHero">
+          <div>
+            <h1>Build, test and learn options strategies without risking real money.</h1>
+            <p>Pick Nifty, Bank Nifty, FinNifty or Sensex, create option legs, run a paper trade simulation and review the result in one original Market History Lab workflow.</p>
+            <div class="status-row">
+              <span class="chip active">25 free credits</span>
+              <span class="chip">Builder</span>
+              <span class="chip">Paper simulator</span>
+              <span class="chip">Payoff analytics</span>
+            </div>
+          </div>
+          <div class="button-row">
+            <button class="primary" data-page="builder" type="button">Open Builder</button>
+            <button class="secondary" data-page="simulator" type="button">Run Simulator</button>
+          </div>
+        </section>
+
+        <section class="metric-row" aria-label="market snapshot">
+          <div class="metric"><span>Selected Index</span><strong id="metricAsset">Banknifty</strong></div>
+          <div class="metric"><span>Spot</span><strong id="spot">53,710.3</strong></div>
+          <div class="metric"><span>Futures</span><strong id="future">53,895.4</strong></div>
+          <div class="metric"><span>Sim P&L</span><strong id="metricPnl" class="positive">0.00</strong></div>
+        </section>
+
+        <section class="page active" id="page-home">
+          <div class="grid-3">
+            <article class="panel">
+              <div class="panel-head"><h2>Strategy Builder</h2><button class="secondary" data-page="builder" type="button">Open</button></div>
+              <div class="panel-body">
+                <p>Create straddles, strangles, condors, butterflies and ratio spreads from pre-built cards or option-chain clicks.</p>
+                <div class="summary-list">
+                  <div class="summary-item"><span>Pre-built strategies</span><strong>14</strong></div>
+                  <div class="summary-item"><span>Markets</span><strong>4</strong></div>
+                </div>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-head"><h2>Paper Simulator</h2><button class="secondary" data-page="simulator" type="button">Open</button></div>
+              <div class="panel-body">
+              <p>Replay a sample intraday move, place virtual trades and learn how option premiums react to price movement.</p>
+                <div class="summary-list">
+                  <div class="summary-item"><span>Replay speed</span><strong>1x to 5x</strong></div>
+                  <div class="summary-item"><span>Trade mode</span><strong>Paper</strong></div>
+                </div>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-head"><h2>Analytics</h2><button class="secondary" data-page="analytics" type="button">Open</button></div>
+              <div class="panel-body">
+                <p>Check basket premium, risk estimate, breakeven zone and learning notes after every strategy selection.</p>
+                <div class="summary-list">
+                  <div class="summary-item"><span>Basket legs</span><strong id="homeLegs">0</strong></div>
+                  <div class="summary-item"><span>Credits left</span><strong id="homeCredits">25</strong></div>
+                </div>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-head"><h2>Real Data Engine</h2><button class="secondary" data-page="data" type="button">Open</button></div>
+              <div class="panel-body">
+                <p>Import licensed historical options candles, then run basket backtests from the first available candle up to today.</p>
+                <div class="summary-list">
+                  <div class="summary-item"><span>Mode</span><strong>Import/API ready</strong></div>
+                  <div class="summary-item"><span>Backtest range</span><strong>Start to today</strong></div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-data">
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Real Historical Data</h2>
+                <button class="secondary" id="refreshDatasets" type="button">Refresh</button>
+              </div>
+              <div class="panel-body trade-ticket">
+                <label>Dataset
+                  <select id="datasetSelect"></select>
+                </label>
+                <label>Dataset name
+                  <input id="datasetName" value="nifty-options-full-history">
+                </label>
+                <label>Import option candle CSV
+                  <input id="csvFile" type="file" accept=".csv,text/csv">
+                </label>
+                <button class="primary" id="importCsv" type="button">Import CSV Data</button>
+                <p id="dataStatus">Sample dataset available hai. Real backtest ke liye licensed NIFTY/BANKNIFTY options candle data import karo.</p>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Start-to-Today Backtest</h2>
+                <button class="primary" id="runRealBacktest" type="button">Run Backtest</button>
+              </div>
+              <div class="panel-body trade-ticket">
+                <div class="grid-3">
+                  <label>Underlying
+                    <select id="btUnderlying">
+                      <option value="NIFTY">NIFTY</option>
+                      <option value="BANKNIFTY">BANKNIFTY</option>
+                      <option value="FINNIFTY">FINNIFTY</option>
+                      <option value="SENSEX">SENSEX</option>
+                    </select>
+                  </label>
+                  <label>Expiry
+                    <input id="btExpiry" value="2026-05-14">
+                  </label>
+                  <label>End date
+                    <input id="btEndDate" type="date">
+                  </label>
+                </div>
+                <div class="grid-3">
+                  <label>Entry time
+                    <input id="btEntryTime" value="09:20">
+                  </label>
+                  <label>Exit time
+                    <input id="btExitTime" value="15:20">
+                  </label>
+                  <label>Lot/Qty
+                    <input id="btQty" inputmode="numeric" value="50">
+                  </label>
+                </div>
+                <div class="grid-3">
+                  <label>Brokerage/order
+                    <input id="btBrokerage" inputmode="numeric" value="20">
+                  </label>
+                  <label>Slippage %
+                    <input id="btSlippage" inputmode="decimal" value="0.03">
+                  </label>
+                  <label>SL %
+                    <input id="btSl" inputmode="numeric" value="30">
+                  </label>
+                </div>
+                <div class="summary-list" id="realBacktestResult">
+                  <div class="summary-item"><span>Status</span><strong>Basket select karke Run Backtest dabao.</strong></div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-broker">
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Broker Connect</h2>
+                <button class="secondary" id="refreshBroker" type="button">Refresh Status</button>
+              </div>
+              <div class="panel-body">
+                <div class="summary-list" id="brokerStatus">
+                  <div class="summary-item"><span>Status</span><strong>Checking...</strong></div>
+                </div>
+                <div class="row-actions">
+                  <button class="primary" id="connectUpstox" type="button">Connect Upstox</button>
+                  <button class="ghost" id="disconnectBroker" type="button">Disconnect</button>
+                </div>
+                <p>Broker connect paper/live-data mode ke liye hai. Real order placement disabled hai jab tak risk checks, confirmations aur compliance setup complete nahi hota.</p>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head"><h2>Dhan Access Token</h2></div>
+              <div class="panel-body trade-ticket">
+                <label>Dhan Client ID
+                  <input id="dhanClientId" placeholder="Your Dhan client id">
+                </label>
+                <label>Dhan Access Token
+                  <input id="dhanAccessToken" type="password" placeholder="Paste access token">
+                </label>
+                <button class="primary" id="connectDhan" type="button">Connect Dhan</button>
+                <p id="brokerMessage">Dhan token browser se backend ko bheja jayega. Production me encrypted secret storage use karna hoga.</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-builder">
+          <div class="tool-row">
+            <div class="input-group">
+              <select id="asset">
+                <option value="BANKNIFTY">Banknifty</option>
+                <option value="NIFTY">Nifty 50</option>
+                <option value="FINNIFTY">FinNifty</option>
+                <option value="SENSEX">Sensex</option>
+              </select>
+              <span class="chip active">Index</span>
+              <span class="chip">Options</span>
+              <span class="chip" id="selectedExpiry">26 May 2026</span>
+            </div>
+            <div class="button-row">
+              <button class="secondary" id="strategyFinder" type="button">Find Strategy</button>
+              <button class="primary" data-page="simulator" type="button">Paper Trade</button>
+              <button class="ghost" id="clearBasket" type="button">Clear Basket</button>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Option Chain <span id="chainExpiry">(26 May 2026)</span></h2>
+                <button class="secondary" id="addFuture" type="button">Add Future</button>
+              </div>
+              <div class="panel-body">
+                <div class="expiry-strip" id="expiries"></div>
+                <div class="chain-meta">
+                  <div class="mini-card"><span>ATM IV</span><strong>21.9</strong></div>
+                  <div class="mini-card"><span>Straddle premium</span><strong id="straddlePrem">1,619</strong></div>
+                  <div class="mini-card"><span>Max pain</span><strong id="maxPain">55,500</strong></div>
+                </div>
+                <div class="chain-scroll">
+                  <table>
+                    <thead><tr><th>Call LTP</th><th>Strike</th><th>Put LTP</th></tr></thead>
+                    <tbody id="chainRows"></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Pre-built Strategies</h2>
+                <div class="tabs" id="sentiments">
+                  <button class="chip active" data-sentiment="Neutral" type="button">Neutral</button>
+                  <button class="chip" data-sentiment="Bearish" type="button">Bearish</button>
+                  <button class="chip" data-sentiment="Bullish" type="button">Bullish</button>
+                </div>
+              </div>
+              <div class="panel-body">
+                <div class="filters">
+                  <button class="chip active" data-risk="all" type="button">All</button>
+                  <button class="chip" data-risk="defined" type="button">Risk defined</button>
+                  <button class="chip" data-risk="open" type="button">Open risk</button>
+                </div>
+                <div class="strategy-grid" id="strategyGrid"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-basket">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Strategy Basket</h2>
+              <div class="button-row">
+                <button class="secondary" data-page="builder" type="button">Add More Legs</button>
+                <button class="primary" data-page="analytics" type="button">Analyze</button>
+              </div>
+            </div>
+            <div class="panel-body">
+              <table class="basket-table">
+                <thead><tr><th>Leg</th><th>Side</th><th>Strike</th><th>LTP</th><th>Value</th></tr></thead>
+                <tbody id="basketRows"></tbody>
+              </table>
+              <div class="row-actions">
+                <button class="secondary" id="copyStrategy" type="button">Save Strategy</button>
+                <button class="primary" data-page="simulator" type="button">Run Paper Trade</button>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="page" id="page-simulator">
+          <div class="simulator-layout">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Paper Trade Simulator</h2>
+                <div class="button-row">
+                  <button class="secondary" id="stepCandle" type="button">Next Candle</button>
+                  <button class="primary" id="runReplay" type="button">Run Replay</button>
+                </div>
+              </div>
+              <div class="panel-body">
+                <div class="tool-row">
+                  <div class="input-group">
+                    <label>Session <input id="sessionDate" type="date" value="2026-05-15"></label>
+                    <label>Speed <select id="speed"><option>1x</option><option>2x</option><option>5x</option></select></label>
+                  </div>
+                  <span class="chip active" id="replayTime">09:15</span>
+                </div>
+                <div class="summary-list" id="liveSummary">
+                  <div class="summary-item"><span>Live feed</span><strong>Connecting...</strong></div>
+                </div>
+                <div class="chart-box" id="chartBox"></div>
+              </div>
+            </section>
+
+            <aside class="panel">
+              <div class="panel-head"><h2>Trade Ticket</h2></div>
+              <div class="panel-body trade-ticket">
+                <label>Side
+                  <select id="ticketSide"><option>BUY</option><option>SELL</option></select>
+                </label>
+                <label>Option Type
+                  <select id="ticketType"><option>CE</option><option>PE</option></select>
+                </label>
+                <label>Strike
+                  <input id="ticketStrike" inputmode="numeric" value="53900">
+                </label>
+                <label>Quantity
+                  <input id="ticketQty" inputmode="numeric" value="1">
+                </label>
+                <button class="secondary" id="refreshLive" type="button">Refresh Live Price</button>
+                <button class="primary" id="placePaperTrade" type="button">Place Paper Trade</button>
+                <p>Each paper trade uses 1 credit. Demo feed market jaisa moves dikhata hai; real live feed ke liye broker/data API key connect hogi.</p>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="page" id="page-analytics">
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head"><h2>Strategy Analytics</h2><button class="secondary" data-page="basket" type="button">View Basket</button></div>
+              <div class="panel-body">
+                <div class="summary-list" id="analyticsSummary"></div>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-head"><h2>Risk Notes</h2></div>
+              <div class="panel-body">
+                <p id="riskNotes">Select a strategy from Builder to generate a risk summary.</p>
+                <div class="chart-box" id="payoffLarge"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-learning">
+          <div class="grid-3">
+            <article class="lesson">
+              <strong>Short Straddle</strong>
+              <p>Works best when price remains near ATM. Risk is open on both sides, so beginners should test it only in paper mode first.</p>
+            </article>
+            <article class="lesson">
+              <strong>Iron Condor</strong>
+              <p>Risk-defined range strategy. Profit zone is between short strikes and loss is capped by long hedges.</p>
+            </article>
+            <article class="lesson">
+              <strong>Paper Trading Rule</strong>
+              <p>Before using real money, replay at least 20 sessions and note entry, exit, max loss and mistake reason.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-plans">
+          <section class="panel">
+            <div class="panel-head"><h2>Plans</h2><button class="secondary" data-page="builder" type="button">Back to Builder</button></div>
+            <div class="panel-body grid-3">
+              <div class="lesson"><strong>Starter</strong><p>25 free credits for learning and testing basic strategies.</p></div>
+              <div class="lesson"><strong>Backtester</strong><p>More credits, saved strategies and detailed reports when real historical options data is connected.</p></div>
+              <div class="lesson"><strong>Pro Lab</strong><p>Advanced simulator, downloadable reports and multi-session strategy journal.</p></div>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2 id="authTitle">Login</h2>
+          <button class="ghost" id="authClose" type="button">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="auth-tabs">
+            <button class="active" id="loginTab" type="button">Login</button>
+            <button id="registerTab" type="button">Register</button>
+          </div>
+          <label id="nameField">Name
+            <input id="authName" autocomplete="name" placeholder="Your name">
+          </label>
+          <label>Email
+            <input id="authEmail" autocomplete="email" placeholder="you@example.com">
+          </label>
+          <label>Password
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="Minimum 6 characters">
+          </label>
+          <div class="auth-message" id="authMessage"></div>
+          <button class="primary" id="authSubmit" type="button">Login</button>
+          <p>Starter account me 25 free credits milenge. Ye local backend auth setup hai; production me domain + database + email verification add karenge.</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const data = {
+        BANKNIFTY: { label: "Banknifty", spot: 53710.3, fut: 53895.4, synth: 53897.2, step: 100, atm: 53900, maxPain: 55500 },
+        NIFTY: { label: "Nifty 50", spot: 22450.2, fut: 22510.4, synth: 22508.8, step: 50, atm: 22500, maxPain: 22600 },
+        FINNIFTY: { label: "FinNifty", spot: 21400.6, fut: 21465.1, synth: 21468.3, step: 50, atm: 21400, maxPain: 21500 },
+        SENSEX: { label: "Sensex", spot: 74200.8, fut: 74320.2, synth: 74318.7, step: 100, atm: 74200, maxPain: 74500 }
+      };
+
+      const expiries = [
+        ["26 May 2026", "11 DTE"],
+        ["30 Jun 2026", "46 DTE"],
+        ["28 Jul 2026", "74 DTE"],
+        ["29 Sep 2026", "137 DTE"],
+        ["29 Dec 2026", "228 DTE"]
+      ];
+
+      const strategies = [
+        { name: "Short Straddle", bias: "neutral", defined: false, points: [[14, 88], [90, 20], [166, 88]] },
+        { name: "Long Straddle", bias: "neutral", defined: false, points: [[14, 22], [90, 86], [166, 22]] },
+        { name: "Short Strangle", bias: "neutral", defined: false, points: [[14, 88], [58, 30], [122, 30], [166, 88]] },
+        { name: "Long Strangle", bias: "neutral", defined: false, points: [[14, 22], [58, 76], [122, 76], [166, 22]] },
+        { name: "Long Iron Condor", bias: "neutral", defined: true, points: [[14, 24], [44, 24], [64, 78], [116, 78], [136, 24], [166, 24]] },
+        { name: "Short Iron Condor", bias: "neutral", defined: true, points: [[14, 78], [44, 78], [64, 28], [116, 28], [136, 78], [166, 78]] },
+        { name: "Short Iron Butterfly", bias: "neutral", defined: true, points: [[14, 78], [58, 78], [90, 24], [122, 78], [166, 78]] },
+        { name: "Long Iron Butterfly", bias: "neutral", defined: true, points: [[14, 26], [58, 26], [90, 82], [122, 26], [166, 26]] },
+        { name: "Double Plateau", bias: "neutral", defined: true, points: [[14, 78], [38, 78], [52, 30], [74, 30], [90, 78], [106, 30], [128, 30], [142, 78], [166, 78]] },
+        { name: "Jade Lizard", bias: "bullish", defined: false, points: [[14, 88], [66, 30], [116, 30], [142, 54], [166, 54]] },
+        { name: "Reverse Jade Lizard", bias: "bearish", defined: false, points: [[14, 54], [38, 54], [64, 30], [114, 30], [166, 88]] },
+        { name: "Call Ratio Spread", bias: "bullish", defined: false, points: [[14, 58], [66, 58], [106, 24], [166, 88]] },
+        { name: "Put Ratio Spread", bias: "bearish", defined: false, points: [[14, 88], [74, 24], [114, 58], [166, 58]] },
+        { name: "Batman", bias: "neutral", defined: true, points: [[14, 74], [42, 42], [64, 58], [90, 36], [116, 58], [138, 42], [166, 74]] }
+      ];
+
+      const candles = [
+        [30, 245], [58, 230], [86, 260], [114, 210], [142, 220], [170, 185], [198, 198],
+        [226, 160], [254, 175], [282, 138], [310, 128], [338, 148], [366, 112], [394, 98],
+        [422, 130], [450, 78], [478, 88], [506, 58], [534, 74], [562, 52], [590, 66]
+      ];
+
+      const state = {
+        page: "home",
+        asset: "BANKNIFTY",
+        expiry: 0,
+        sentiment: "Neutral",
+        risk: "all",
+        basket: [],
+        selectedStrategy: null,
+        credits: 25,
+        replay: 0,
+        paperTrades: [],
+        datasets: [],
+        liveQuote: null,
+        liveChain: [],
+        brokerSession: localStorage.getItem("mhl_broker_session") || cryptoRandom(),
+        broker: null,
+        authMode: "login",
+        token: localStorage.getItem("mhl_token") || "",
+        user: null
+      };
+
+      const el = {
+        nav: document.querySelector("#nav"),
+        homeHero: document.querySelector("#homeHero"),
+        asset: document.querySelector("#asset"),
+        spot: document.querySelector("#spot"),
+        future: document.querySelector("#future"),
+        metricAsset: document.querySelector("#metricAsset"),
+        metricPnl: document.querySelector("#metricPnl"),
+        creditCount: document.querySelector("#creditCount"),
+        userPill: document.querySelector("#userPill"),
+        loginOpen: document.querySelector("#loginOpen"),
+        logoutBtn: document.querySelector("#logoutBtn"),
+        authModal: document.querySelector("#authModal"),
+        authTitle: document.querySelector("#authTitle"),
+        authClose: document.querySelector("#authClose"),
+        loginTab: document.querySelector("#loginTab"),
+        registerTab: document.querySelector("#registerTab"),
+        nameField: document.querySelector("#nameField"),
+        authName: document.querySelector("#authName"),
+        authEmail: document.querySelector("#authEmail"),
+        authPassword: document.querySelector("#authPassword"),
+        authMessage: document.querySelector("#authMessage"),
+        authSubmit: document.querySelector("#authSubmit"),
+        homeCredits: document.querySelector("#homeCredits"),
+        homeLegs: document.querySelector("#homeLegs"),
+        chainRows: document.querySelector("#chainRows"),
+        expiries: document.querySelector("#expiries"),
+        selectedExpiry: document.querySelector("#selectedExpiry"),
+        chainExpiry: document.querySelector("#chainExpiry"),
+        straddlePrem: document.querySelector("#straddlePrem"),
+        maxPain: document.querySelector("#maxPain"),
+        strategyGrid: document.querySelector("#strategyGrid"),
+        basketRows: document.querySelector("#basketRows"),
+        analyticsSummary: document.querySelector("#analyticsSummary"),
+        riskNotes: document.querySelector("#riskNotes"),
+        chartBox: document.querySelector("#chartBox"),
+        payoffLarge: document.querySelector("#payoffLarge"),
+        replayTime: document.querySelector("#replayTime"),
+        liveSummary: document.querySelector("#liveSummary"),
+        datasetSelect: document.querySelector("#datasetSelect"),
+        datasetName: document.querySelector("#datasetName"),
+        csvFile: document.querySelector("#csvFile"),
+        dataStatus: document.querySelector("#dataStatus"),
+        realBacktestResult: document.querySelector("#realBacktestResult"),
+        btUnderlying: document.querySelector("#btUnderlying"),
+        btExpiry: document.querySelector("#btExpiry"),
+        btEndDate: document.querySelector("#btEndDate"),
+        btEntryTime: document.querySelector("#btEntryTime"),
+        btExitTime: document.querySelector("#btExitTime"),
+        btQty: document.querySelector("#btQty"),
+        btBrokerage: document.querySelector("#btBrokerage"),
+        btSlippage: document.querySelector("#btSlippage"),
+        btSl: document.querySelector("#btSl"),
+        brokerStatus: document.querySelector("#brokerStatus"),
+        brokerMessage: document.querySelector("#brokerMessage"),
+        dhanClientId: document.querySelector("#dhanClientId"),
+        dhanAccessToken: document.querySelector("#dhanAccessToken")
+      };
+
+      function init() {
+        el.btEndDate.value = new Date().toISOString().slice(0, 10);
+        renderExpiries();
+        renderAll();
+        wire();
+        loadDatasets();
+        loadCurrentUser();
+        localStorage.setItem("mhl_broker_session", state.brokerSession);
+      }
+
+      function wire() {
+        document.addEventListener("click", event => {
+          const pageButton = event.target.closest("[data-page]");
+          if (pageButton) showPage(pageButton.dataset.page);
+        });
+        el.asset.addEventListener("change", () => {
+          state.asset = el.asset.value;
+          renderAll();
+        });
+        document.querySelector("#clearBasket").addEventListener("click", () => {
+          state.basket = [];
+          renderAll();
+        });
+        document.querySelector("#copyStrategy").addEventListener("click", () => {
+          state.credits = Math.max(0, state.credits - 1);
+          renderCredits();
+        });
+        document.querySelector("#addFuture").addEventListener("click", addFutureLeg);
+        document.querySelector("#strategyFinder").addEventListener("click", () => {
+          state.sentiment = "Neutral";
+          document.querySelectorAll("[data-sentiment]").forEach(item => item.classList.toggle("active", item.dataset.sentiment === "Neutral"));
+          renderStrategies();
+        });
+        document.querySelector("#sentiments").addEventListener("click", event => {
+          const button = event.target.closest("[data-sentiment]");
+          if (!button) return;
+          state.sentiment = button.dataset.sentiment;
+          document.querySelectorAll("[data-sentiment]").forEach(item => item.classList.toggle("active", item === button));
+          renderStrategies();
+        });
+        document.querySelectorAll("[data-risk]").forEach(button => {
+          button.addEventListener("click", () => {
+            state.risk = button.dataset.risk;
+            document.querySelectorAll("[data-risk]").forEach(item => item.classList.toggle("active", item === button));
+            renderStrategies();
+          });
+        });
+        document.querySelector("#stepCandle").addEventListener("click", () => {
+          state.replay = Math.min(candles.length - 1, state.replay + 1);
+          renderChart();
+        });
+        document.querySelector("#runReplay").addEventListener("click", () => {
+          state.replay = Math.min(candles.length - 1, state.replay + 5);
+          renderChart();
+          state.credits = Math.max(0, state.credits - 1);
+          renderCredits();
+        });
+        document.querySelector("#placePaperTrade").addEventListener("click", placePaperTrade);
+        document.querySelector("#refreshLive").addEventListener("click", refreshLiveFeed);
+        document.querySelector("#refreshDatasets").addEventListener("click", loadDatasets);
+        document.querySelector("#importCsv").addEventListener("click", importCsvDataset);
+        document.querySelector("#runRealBacktest").addEventListener("click", runRealBacktest);
+        document.querySelector("#refreshBroker").addEventListener("click", loadBrokerStatus);
+        document.querySelector("#connectUpstox").addEventListener("click", connectUpstox);
+        document.querySelector("#connectDhan").addEventListener("click", connectDhan);
+        document.querySelector("#disconnectBroker").addEventListener("click", disconnectBroker);
+        el.loginOpen.addEventListener("click", () => openAuth("login"));
+        el.authClose.addEventListener("click", closeAuth);
+        el.authModal.addEventListener("click", event => {
+          if (event.target === el.authModal) closeAuth();
+        });
+        el.loginTab.addEventListener("click", () => setAuthMode("login"));
+        el.registerTab.addEventListener("click", () => setAuthMode("register"));
+        el.authSubmit.addEventListener("click", submitAuth);
+        el.logoutBtn.addEventListener("click", logout);
+      }
+
+      function showPage(page) {
+        state.page = page;
+        document.querySelectorAll(".page").forEach(item => item.classList.toggle("active", item.id === `page-${page}`));
+        document.querySelectorAll("#nav [data-page]").forEach(item => item.classList.toggle("active", item.dataset.page === page));
+        el.homeHero.style.display = page === "home" ? "grid" : "none";
+        if (page === "analytics") renderAnalytics();
+        if (page === "simulator") {
+          renderChart();
+          refreshLiveFeed();
+        }
+        if (page === "data") loadDatasets();
+        if (page === "broker") loadBrokerStatus();
+      }
+
+      function renderAll() {
+        renderMarket();
+        renderChain();
+        renderStrategies();
+        renderBasket();
+        renderAnalytics();
+        renderChart();
+        renderCredits();
+      }
+
+      function renderMarket() {
+        const meta = data[state.asset];
+        el.metricAsset.textContent = meta.label;
+        el.spot.textContent = num(meta.spot, 1);
+        el.future.textContent = num(meta.fut, 1);
+        el.maxPain.textContent = num(meta.maxPain, 0);
+        document.querySelector("#ticketStrike").value = meta.atm;
+      }
+
+      function renderCredits() {
+        const credits = state.user?.credits ?? state.credits;
+        el.creditCount.textContent = credits;
+        el.homeCredits.textContent = credits;
+        el.homeLegs.textContent = state.basket.length;
+        el.userPill.textContent = state.user ? `${state.user.name} (${state.user.plan})` : "Guest";
+        el.loginOpen.hidden = Boolean(state.user);
+        el.logoutBtn.hidden = !state.user;
+      }
+
+      function openAuth(mode = "login") {
+        setAuthMode(mode);
+        el.authMessage.textContent = "";
+        el.authModal.classList.add("active");
+      }
+
+      function closeAuth() {
+        el.authModal.classList.remove("active");
+      }
+
+      function setAuthMode(mode) {
+        state.authMode = mode;
+        const isRegister = mode === "register";
+        el.authTitle.textContent = isRegister ? "Create account" : "Login";
+        el.authSubmit.textContent = isRegister ? "Create account" : "Login";
+        el.nameField.style.display = isRegister ? "grid" : "none";
+        el.loginTab.classList.toggle("active", !isRegister);
+        el.registerTab.classList.toggle("active", isRegister);
+        el.authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+      }
+
+      async function submitAuth() {
+        el.authMessage.textContent = "Please wait...";
+        const endpoint = state.authMode === "register" ? "/api/auth/register" : "/api/auth/login";
+        try {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: el.authName.value,
+              email: el.authEmail.value,
+              password: el.authPassword.value
+            })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Auth failed");
+          state.token = payload.token;
+          state.user = payload.user;
+          state.credits = payload.user.credits;
+          localStorage.setItem("mhl_token", state.token);
+          el.authMessage.textContent = "";
+          closeAuth();
+          renderCredits();
+        } catch (error) {
+          el.authMessage.textContent = error.message;
+        }
+      }
+
+      async function loadCurrentUser() {
+        if (!state.token) {
+          renderCredits();
+          return;
+        }
+        try {
+          const response = await fetch("/api/auth/me", {
+            headers: { Authorization: `Bearer ${state.token}` }
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Session expired");
+          state.user = payload.user;
+          state.credits = payload.user.credits;
+        } catch {
+          state.token = "";
+          state.user = null;
+          localStorage.removeItem("mhl_token");
+        }
+        renderCredits();
+      }
+
+      async function logout() {
+        try {
+          if (state.token) {
+            await fetch("/api/auth/logout", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${state.token}` }
+            });
+          }
+        } finally {
+          state.token = "";
+          state.user = null;
+          localStorage.removeItem("mhl_token");
+          renderCredits();
+        }
+      }
+
+      function renderExpiries() {
+        el.expiries.innerHTML = expiries.map(([date, dte], index) => `
+          <div class="expiry ${index === state.expiry ? "active" : ""}" data-expiry="${index}">
+            ${date}<small>${dte}</small>
+          </div>
+        `).join("");
+        el.expiries.addEventListener("click", event => {
+          const item = event.target.closest("[data-expiry]");
+          if (!item) return;
+          state.expiry = Number(item.dataset.expiry);
+          el.selectedExpiry.textContent = expiries[state.expiry][0];
+          el.chainExpiry.textContent = `(${expiries[state.expiry][0]})`;
+          renderExpiries();
+        });
+      }
+
+      function renderChain() {
+        const meta = data[state.asset];
+        const rows = [];
+        let straddle = 0;
+        for (let i = -7; i <= 7; i++) {
+          const strike = meta.atm + i * meta.step;
+          const call = premium("CE", strike, meta.spot);
+          const put = premium("PE", strike, meta.spot);
+          if (strike === meta.atm) straddle = call + put;
+          const rowClass = strike === meta.atm ? "atm" : i < 0 ? "itm" : "";
+          rows.push(`
+            <tr class="${rowClass}" data-strike="${strike}">
+              <td><span class="ltp">${num(call, 2)}</span><span class="oi-bar call-oi" style="width:${22 + Math.abs(i) * 8}px"></span></td>
+              <td><strong>${num(strike, 0)}</strong>${strike === meta.atm ? "<br><small>(ATM)</small>" : ""}</td>
+              <td><span class="ltp">${num(put, 2)}</span><span class="oi-bar" style="width:${78 - Math.abs(i) * 6}px"></span></td>
+            </tr>
+          `);
+        }
+        el.chainRows.innerHTML = rows.join("");
+        el.straddlePrem.textContent = num(straddle, 0);
+        el.chainRows.querySelectorAll("tr").forEach(row => {
+          row.addEventListener("click", () => addManualLeg(Number(row.dataset.strike)));
+        });
+      }
+
+      function renderStrategies() {
+        const sentiment = state.sentiment.toLowerCase();
+        el.strategyGrid.innerHTML = strategies
+          .filter(item => sentiment === "neutral" ? true : item.bias === sentiment || item.bias === "neutral")
+          .filter(item => state.risk === "all" || (state.risk === "defined" ? item.defined : !item.defined))
+          .map((strategy, index) => `
+            <article class="strategy-card ${state.selectedStrategy === strategy.name ? "active" : ""}" data-strategy="${strategy.name}" data-index="${index}">
+              ${payoffSvg(strategy, 180, 112)}
+              <h3>${strategy.name}</h3>
+            </article>
+          `).join("");
+        el.strategyGrid.querySelectorAll(".strategy-card").forEach(card => {
+          card.addEventListener("click", () => {
+            applyStrategy(card.dataset.strategy);
+            showPage("basket");
+          });
+        });
+      }
+
+      function payoffSvg(strategy, width, height) {
+        const base = Math.round(height * 0.52);
+        const sx = width / 180;
+        const sy = height / 104;
+        const points = strategy.points.map(point => [Math.round(point[0] * sx), Math.round(point[1] * sy)]);
+        const line = points.map((point, index) => `${index ? "L" : "M"}${point[0]} ${point[1]}`).join(" ");
+        const area = `M${points[0][0]} ${base} ${points.map(point => `L${point[0]} ${point[1]}`).join(" ")} L${points[points.length - 1][0]} ${base} Z`;
+        const id = strategy.name.replace(/\s+/g, "-").toLowerCase();
+        return `
+          <svg class="payoff" viewBox="0 0 ${width} ${height}" aria-hidden="true">
+            <rect x="0" y="0" width="${width}" height="${height}" fill="#f7fbfa"/>
+            <defs>
+              <clipPath id="profit-${id}"><rect x="0" y="0" width="${width}" height="${base}"/></clipPath>
+              <clipPath id="loss-${id}"><rect x="0" y="${base}" width="${width}" height="${height - base}"/></clipPath>
+            </defs>
+            <path d="M0 ${base}H${width}" stroke="#d9e8e4" stroke-width="1"/>
+            <path d="M${width / 2} 10V${height - 10}" stroke="#d9e8e4" stroke-width="1"/>
+            <path d="${area}" fill="rgba(13,159,104,.20)" clip-path="url(#profit-${id})"/>
+            <path d="${area}" fill="rgba(216,75,75,.20)" clip-path="url(#loss-${id})"/>
+            <path d="${line}" fill="none" stroke="#0d9f68" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" clip-path="url(#profit-${id})"/>
+            <path d="${line}" fill="none" stroke="#d84b4b" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" clip-path="url(#loss-${id})"/>
+          </svg>
+        `;
+      }
+
+      function applyStrategy(name) {
+        const meta = data[state.asset];
+        const atm = meta.atm;
+        const step = meta.step;
+        const legs = [];
+        const add = (side, type, strike) => legs.push({ side, type, strike, qty: 1, ltp: premium(type, strike, meta.spot) });
+        if (name.includes("Short Straddle")) { add("SELL", "CE", atm); add("SELL", "PE", atm); }
+        else if (name.includes("Long Straddle")) { add("BUY", "CE", atm); add("BUY", "PE", atm); }
+        else if (name.includes("Short Strangle")) { add("SELL", "CE", atm + step); add("SELL", "PE", atm - step); }
+        else if (name.includes("Long Strangle")) { add("BUY", "CE", atm + step); add("BUY", "PE", atm - step); }
+        else if (name.includes("Iron") || name.includes("Condor") || name.includes("Butterfly")) {
+          add("SELL", "CE", atm); add("SELL", "PE", atm); add("BUY", "CE", atm + step * 2); add("BUY", "PE", atm - step * 2);
+        } else if (name.includes("Call")) { add("BUY", "CE", atm); add("SELL", "CE", atm + step); add("SELL", "CE", atm + step * 2); }
+        else if (name.includes("Put")) { add("BUY", "PE", atm); add("SELL", "PE", atm - step); add("SELL", "PE", atm - step * 2); }
+        else { add("SELL", "CE", atm + step); add("BUY", "PE", atm - step); }
+        state.selectedStrategy = name;
+        state.basket = legs;
+        renderAll();
+      }
+
+      function addManualLeg(strike) {
+        const meta = data[state.asset];
+        state.basket.push({ side: "BUY", type: "CE", strike, qty: 1, ltp: premium("CE", strike, meta.spot) });
+        state.selectedStrategy = "Custom basket";
+        renderAll();
+      }
+
+      function addFutureLeg() {
+        const meta = data[state.asset];
+        state.basket.push({ side: "BUY", type: "FUT", strike: meta.fut, qty: 1, ltp: meta.fut });
+        state.selectedStrategy = "Custom basket";
+        renderAll();
+      }
+
+      function renderBasket() {
+        if (!state.basket.length) {
+          el.basketRows.innerHTML = `<tr><td colspan="5" class="empty">Builder se strategy select karo ya option-chain strike click karo.</td></tr>`;
+          return;
+        }
+        el.basketRows.innerHTML = state.basket.map((leg, index) => `
+          <tr>
+            <td>${index + 1}. ${leg.type}</td>
+            <td>${leg.side}</td>
+            <td>${leg.type === "FUT" ? "Future" : num(leg.strike, 0)}</td>
+            <td>${num(leg.ltp, 2)}</td>
+            <td class="${leg.side === "SELL" ? "positive" : "negative"}">${leg.side === "SELL" ? "+" : "-"}${num(leg.ltp * leg.qty, 2)}</td>
+          </tr>
+        `).join("");
+        renderCredits();
+      }
+
+      function renderAnalytics() {
+        const credit = state.basket.filter(item => item.side === "SELL").reduce((sum, item) => sum + item.ltp * item.qty, 0);
+        const debit = state.basket.filter(item => item.side === "BUY").reduce((sum, item) => sum + item.ltp * item.qty, 0);
+        const net = credit - debit;
+        const risk = estimateRisk();
+        el.metricPnl.textContent = num(net, 2);
+        el.metricPnl.className = net >= 0 ? "positive" : "negative";
+        el.analyticsSummary.innerHTML = `
+          <div class="summary-item"><span>Selected strategy</span><strong>${state.selectedStrategy || "None"}</strong></div>
+          <div class="summary-item"><span>Total credit</span><strong class="positive">${num(credit, 2)}</strong></div>
+          <div class="summary-item"><span>Total debit</span><strong class="negative">${num(debit, 2)}</strong></div>
+          <div class="summary-item"><span>Net premium</span><strong class="${net >= 0 ? "positive" : "negative"}">${num(net, 2)}</strong></div>
+          <div class="summary-item"><span>Risk estimate</span><strong>${risk}</strong></div>
+        `;
+        el.riskNotes.textContent = state.basket.length
+          ? `${state.selectedStrategy || "Custom basket"} selected. Check max loss before real trading. Paper simulator me pehle replay run karo.`
+          : "Select a strategy from Builder to generate a risk summary.";
+        const strategy = strategies.find(item => item.name === state.selectedStrategy) || strategies[0];
+        el.payoffLarge.innerHTML = payoffSvg(strategy, 620, 360);
+      }
+
+      function renderChart() {
+        const active = candles.slice(0, state.replay + 1);
+        const liveSpot = state.liveQuote?.ltp || data[state.asset].spot;
+        const candleSvg = candles.map(([x, y], index) => {
+          const open = y + (index % 2 ? 16 : -10);
+          const close = y + (index % 2 ? -14 : 16);
+          const high = Math.min(open, close) - 20;
+          const low = Math.max(open, close) + 20;
+          const live = index <= state.replay;
+          const up = close < open;
+          return `
+            <g opacity="${live ? 1 : .18}">
+              <line x1="${x}" y1="${high}" x2="${x}" y2="${low}" stroke="${up ? "#0d9f68" : "#d84b4b"}" stroke-width="2"/>
+              <rect x="${x - 6}" y="${Math.min(open, close)}" width="12" height="${Math.abs(close - open) || 2}" rx="2" fill="${up ? "#0d9f68" : "#d84b4b"}"/>
+            </g>
+          `;
+        }).join("");
+        el.replayTime.textContent = `09:${String(15 + state.replay * 3).padStart(2, "0")}`;
+        el.chartBox.innerHTML = `
+          <svg class="chart-svg" viewBox="0 0 620 360" aria-label="paper trading replay chart">
+            <rect width="620" height="360" fill="#ffffff"/>
+            ${[70, 130, 190, 250, 310].map(y => `<path d="M20 ${y}H600" stroke="#edf4f2"/>`).join("")}
+            <path d="${active.map(([x, y], index) => `${index ? "L" : "M"}${x} ${y}`).join(" ")}" fill="none" stroke="#087c73" stroke-width="2.5"/>
+            ${candleSvg}
+            <text x="28" y="34" fill="#087c73" font-size="18" font-weight="800">Live paper spot: ${num(liveSpot, 2)}</text>
+          </svg>
+        `;
+      }
+
+      async function refreshLiveFeed() {
+        try {
+          const quoteResponse = await fetch(`/api/live/quote?underlying=${encodeURIComponent(state.asset)}`);
+          const chainResponse = await fetch(`/api/live/chain?underlying=${encodeURIComponent(state.asset)}`);
+          if (!quoteResponse.ok || !chainResponse.ok) throw new Error("Live feed API unavailable");
+          const quote = await quoteResponse.json();
+          const chain = await chainResponse.json();
+          state.liveQuote = quote;
+          state.liveChain = chain.rows || [];
+          el.liveSummary.innerHTML = `
+            <div class="summary-item"><span>Source</span><strong>${quote.source === "demo-live-paper" ? "Demo live paper feed" : "External live feed"}</strong></div>
+            <div class="summary-item"><span>${quote.label}</span><strong>${num(quote.ltp, 2)}</strong></div>
+            <div class="summary-item"><span>Change</span><strong class="${quote.change >= 0 ? "positive" : "negative"}">${num(quote.change, 2)} (${num(quote.changePct, 2)}%)</strong></div>
+            <div class="summary-item"><span>Updated</span><strong>${new Date(quote.updatedAt).toLocaleTimeString("en-IN")}</strong></div>
+          `;
+          renderChart();
+        } catch (error) {
+          el.liveSummary.innerHTML = `<div class="summary-item"><span>Live feed</span><strong>${error.message}</strong></div>`;
+        }
+      }
+
+      async function placePaperTrade() {
+        if (!state.liveQuote) await refreshLiveFeed();
+        if (!state.credits) return;
+        const side = document.querySelector("#ticketSide").value;
+        const type = document.querySelector("#ticketType").value;
+        const strike = Number(document.querySelector("#ticketStrike").value);
+        const qty = Number(document.querySelector("#ticketQty").value || 1);
+        const meta = data[state.asset];
+        const liveRow = state.liveChain.find(row => Number(row.strike) === strike);
+        const livePremium = liveRow ? liveRow[type === "CE" ? "call" : "put"] : premium(type, strike, state.liveQuote?.ltp || meta.spot);
+        state.basket.push({ side, type, strike, qty, ltp: livePremium });
+        state.paperTrades.push({ side, type, strike, qty });
+        state.selectedStrategy = "Paper trade basket";
+        state.credits = Math.max(0, state.credits - 1);
+        renderAll();
+        showPage("basket");
+      }
+
+      async function loadDatasets() {
+        try {
+          const response = await fetch("/api/datasets");
+          if (!response.ok) throw new Error(`Dataset API error ${response.status}`);
+          const payload = await response.json();
+          state.datasets = payload.datasets?.length ? payload.datasets : [{
+            name: "sample-options",
+            rows: 0,
+            firstDate: "sample",
+            lastDate: "sample",
+            sample: true
+          }];
+          el.datasetSelect.innerHTML = state.datasets.length
+            ? state.datasets.map(dataset => `
+                <option value="${dataset.name}">
+                  ${dataset.name} - ${dataset.rows} rows (${dataset.firstDate || "?"} to ${dataset.lastDate || "?"})
+                </option>
+              `).join("")
+            : `<option value="">No dataset imported</option>`;
+          const realCount = state.datasets.filter(dataset => !dataset.sample).length;
+          el.dataStatus.textContent = realCount
+            ? `${realCount} real dataset ready hai. Ab basket select karke start-to-today backtest chala sakte ho.`
+            : "Sample dataset available hai. Real result ke liye licensed full historical options candles import karo.";
+        } catch (error) {
+          el.dataStatus.textContent = `Data engine connect nahi hua: ${error.message}`;
+        }
+      }
+
+      async function importCsvDataset() {
+        const file = el.csvFile.files?.[0];
+        if (!file) {
+          el.dataStatus.textContent = "Pehle CSV file choose karo.";
+          return;
+        }
+        el.dataStatus.textContent = "CSV import ho raha hai...";
+        try {
+          const csv = await file.text();
+          const response = await fetch("/api/import-csv", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: el.datasetName.value, csv })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "CSV import failed");
+          el.dataStatus.textContent = `Imported: ${payload.name}, rows: ${payload.dataset.rowCount}, range: ${payload.dataset.firstDate} to ${payload.dataset.lastDate}`;
+          await loadDatasets();
+        } catch (error) {
+          el.dataStatus.textContent = `Import failed: ${error.message}`;
+        }
+      }
+
+      async function runRealBacktest() {
+        const datasetName = el.datasetSelect.value || "sample-options";
+        const meta = data[el.btUnderlying.value] || data[state.asset];
+        const optionLegs = state.basket.filter(leg => leg.type === "CE" || leg.type === "PE");
+        const fallbackLegs = [
+          { side: "SELL", type: "CE", strike: meta.atm, qty: Number(el.btQty.value || 50), slPct: Number(el.btSl.value || 30) },
+          { side: "SELL", type: "PE", strike: meta.atm, qty: Number(el.btQty.value || 50), slPct: Number(el.btSl.value || 30) }
+        ];
+        const legs = (optionLegs.length ? optionLegs : fallbackLegs).map(leg => ({
+          side: leg.side,
+          type: leg.type,
+          strike: Number(leg.strike),
+          qty: Number(el.btQty.value || leg.qty || 50),
+          slPct: Number(el.btSl.value || 0)
+        }));
+        el.realBacktestResult.innerHTML = `<div class="summary-item"><span>Status</span><strong>Backtest running...</strong></div>`;
+        try {
+          const response = await fetch("/api/backtest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              datasetName,
+              underlying: el.btUnderlying.value,
+              expiry: el.btExpiry.value,
+              endDate: el.btEndDate.value,
+              entryTime: el.btEntryTime.value,
+              exitTime: el.btExitTime.value,
+              legs,
+              charges: {
+                brokeragePerOrder: Number(el.btBrokerage.value || 20),
+                slippagePct: Number(el.btSlippage.value || 0)
+              }
+            })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Backtest failed");
+          const summary = payload.result.summary;
+          el.realBacktestResult.innerHTML = `
+            <div class="summary-item"><span>Dataset</span><strong>${payload.dataset}</strong></div>
+            <div class="summary-item"><span>Entry to exit</span><strong>${summary.entry} -> ${summary.exit}</strong></div>
+            <div class="summary-item"><span>Net P&L</span><strong class="${summary.netPnl >= 0 ? "positive" : "negative"}">${num(summary.netPnl, 2)}</strong></div>
+            <div class="summary-item"><span>Gross P&L</span><strong>${num(summary.grossPnl, 2)}</strong></div>
+            <div class="summary-item"><span>Charges</span><strong>${num(summary.totalCharges, 2)}</strong></div>
+            <div class="summary-item"><span>Max loss</span><strong class="negative">${num(summary.maxLoss, 2)}</strong></div>
+            <div class="summary-item"><span>Max drawdown</span><strong class="negative">${num(summary.maxDrawdown, 2)}</strong></div>
+            <div class="summary-item"><span>Notes</span><strong>${payload.result.notes.join(" ")}</strong></div>
+          `;
+        } catch (error) {
+          el.realBacktestResult.innerHTML = `
+            <div class="summary-item"><span>Backtest failed</span><strong>${error.message}</strong></div>
+            <div class="summary-item"><span>Fix</span><strong>Dataset me same underlying, expiry, strike aur CE/PE candles hone chahiye.</strong></div>
+          `;
+        }
+      }
+
+      async function loadBrokerStatus() {
+        try {
+          const response = await fetch("/api/broker/status", { headers: brokerHeaders() });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Broker status failed");
+          state.broker = payload.active;
+          el.brokerStatus.innerHTML = `
+            <div class="summary-item"><span>Active broker</span><strong>${payload.active ? payload.active.profile.broker : "Not connected"}</strong></div>
+            <div class="summary-item"><span>Upstox setup</span><strong>${payload.providers.upstox.configured ? "Configured" : "Needs API keys"}</strong></div>
+            <div class="summary-item"><span>Dhan setup</span><strong>${payload.providers.dhan.configured ? "Server token configured" : "Manual token supported"}</strong></div>
+            <div class="summary-item"><span>Mode</span><strong>Paper/live-data only</strong></div>
+          `;
+          el.brokerMessage.textContent = payload.active
+            ? `${payload.active.profile.broker} connected. Paper trades can use broker/live-data setup.`
+            : "Upstox/Dhan connect karo. Real orders abhi disabled hain.";
+        } catch (error) {
+          el.brokerStatus.innerHTML = `<div class="summary-item"><span>Error</span><strong>${error.message}</strong></div>`;
+        }
+      }
+
+      async function connectUpstox() {
+        el.brokerMessage.textContent = "Upstox login URL bana rahe hain...";
+        try {
+          const response = await fetch("/api/broker/upstox/login-url", { headers: brokerHeaders() });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Upstox setup missing");
+          window.open(payload.authUrl, "_blank", "noopener,noreferrer");
+          el.brokerMessage.textContent = "Upstox login tab open ho gaya. Login ke baad yahan Refresh Status dabao.";
+        } catch (error) {
+          el.brokerMessage.textContent = `${error.message}. Render env me UPSTOX_CLIENT_ID, UPSTOX_CLIENT_SECRET, UPSTOX_REDIRECT_URI add karne honge.`;
+        }
+      }
+
+      async function connectDhan() {
+        el.brokerMessage.textContent = "Dhan connect ho raha hai...";
+        try {
+          const response = await fetch("/api/broker/dhan/connect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...brokerHeaders() },
+            body: JSON.stringify({
+              clientId: el.dhanClientId.value,
+              accessToken: el.dhanAccessToken.value
+            })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Dhan connect failed");
+          if (payload.sessionKey) {
+            state.brokerSession = String(payload.sessionKey).replace(/^guest:/, "");
+            localStorage.setItem("mhl_broker_session", state.brokerSession);
+          }
+          el.dhanAccessToken.value = "";
+          await loadBrokerStatus();
+        } catch (error) {
+          el.brokerMessage.textContent = error.message;
+        }
+      }
+
+      async function disconnectBroker() {
+        await fetch("/api/broker/disconnect", { method: "POST", headers: brokerHeaders() });
+        state.broker = null;
+        await loadBrokerStatus();
+      }
+
+      function brokerHeaders() {
+        const headers = { "X-Broker-Session": state.brokerSession };
+        if (state.token) headers.Authorization = `Bearer ${state.token}`;
+        return headers;
+      }
+
+      function estimateRisk() {
+        if (!state.basket.length) return "No basket";
+        const hasHedge = state.basket.some(item => item.side === "BUY") && state.basket.some(item => item.side === "SELL");
+        const onlyBuy = state.basket.every(item => item.side === "BUY");
+        if (onlyBuy) return "Limited to premium paid";
+        return hasHedge ? "Defined/partial hedge" : "Open risk";
+      }
+
+      function premium(type, strike, spot) {
+        const step = data[state.asset].step;
+        if (type === "FUT") return strike;
+        const intrinsic = type === "CE" ? Math.max(0, spot - strike) : Math.max(0, strike - spot);
+        const distance = Math.abs(strike - spot) / step;
+        return Math.max(5, intrinsic + step * 7.6 * Math.exp(-distance * 0.2));
+      }
+
+      function num(value, decimals = 1) {
+        return Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
+      }
+
+      function cryptoRandom() {
+        if (window.crypto?.getRandomValues) {
+          const values = new Uint32Array(4);
+          window.crypto.getRandomValues(values);
+          return Array.from(values).map(value => value.toString(16)).join("");
+        }
+        return String(Date.now()) + Math.random().toString(16).slice(2);
+      }
+
+      init();
+    </script>
+  </body>
+</html>

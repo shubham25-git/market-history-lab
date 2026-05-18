@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "id": "a98c5603-1556-4123-9438-1fb709a4fd14",
+      "name": "Test User",
+      "email": "test1779033274@mhl.local",
+      "salt": "a8cadfacaf5f20dd3b70f406c3984b11",
+      "passwordHash": "5973bc746b79bc819989d1774d978c03dc860572617be4b6a0ca78f7a5316533",
+      "credits": 25,
+      "plan": "Starter",
+      "createdAt": "2026-05-17T15:54:35.985Z"
+    }
+  ]
+}
