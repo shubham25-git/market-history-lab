@@ -19,6 +19,8 @@ const cacheMs = 15 * 60 * 1000;
 const cache = new Map();
 const sessions = new Map();
 const brokerConnections = new Map();
+let pgPool = null;
+let dbReady = false;
 
 const assets = {
   nifty50: { label: "Nifty 50", symbol: "^NSEI", currency: "INR", decimals: 2 },
@@ -59,7 +61,18 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (url.pathname === "/api/health") {
-      sendJson(res, 200, { ok: true, name: "Market History Lab backend", mode: "csv-real-engine-v1" });
+      sendJson(res, 200, {
+        ok: true,
+        name: "Market History Lab backend",
+        mode: "csv-real-engine-v1",
+        storage: databaseEnabled() ? "postgres" : "file",
+        liveProvider: process.env.LIVE_DATA_PROVIDER || (process.env.LIVE_QUOTE_URL ? "custom-http" : "demo-live")
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/system/status" && req.method === "GET") {
+      await sendSystemStatus(res);
       return;
     }
 
@@ -237,6 +250,15 @@ function logoutUser(req, res) {
 }
 
 async function readUsers() {
+  if (databaseEnabled()) {
+    const db = await getDb();
+    const result = await db.query(`
+      select id, name, email, salt, password_hash as "passwordHash", credits, plan, created_at as "createdAt"
+      from mhl_users
+      order by created_at desc
+    `);
+    return { users: result.rows };
+  }
   try {
     const raw = await fs.readFile(usersPath, "utf8");
     const parsed = JSON.parse(raw);
@@ -248,8 +270,63 @@ async function readUsers() {
 }
 
 async function writeUsers(store) {
+  if (databaseEnabled()) {
+    const db = await getDb();
+    for (const user of store.users) {
+      await db.query(
+        `insert into mhl_users (id, name, email, salt, password_hash, credits, plan, created_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8)
+         on conflict (id) do update set
+           name = excluded.name,
+           email = excluded.email,
+           salt = excluded.salt,
+           password_hash = excluded.password_hash,
+           credits = excluded.credits,
+           plan = excluded.plan`,
+        [user.id, user.name, user.email, user.salt, user.passwordHash, Number(user.credits ?? 25), user.plan || "Starter", user.createdAt || new Date().toISOString()]
+      );
+    }
+    return;
+  }
   await fs.mkdir(path.dirname(usersPath), { recursive: true });
   await fs.writeFile(usersPath, JSON.stringify(store, null, 2));
+}
+
+function databaseEnabled() {
+  return Boolean(process.env.DATABASE_URL);
+}
+
+async function getDb() {
+  if (!databaseEnabled()) return null;
+  if (!pgPool) {
+    const { Pool } = require("pg");
+    const ssl = process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false };
+    pgPool = new Pool({ connectionString: process.env.DATABASE_URL, ssl });
+  }
+  if (!dbReady) {
+    await pgPool.query(`
+      create table if not exists mhl_users (
+        id text primary key,
+        name text not null,
+        email text unique not null,
+        salt text not null,
+        password_hash text not null,
+        credits integer not null default 25,
+        plan text not null default 'Starter',
+        created_at timestamptz not null default now()
+      )
+    `);
+    await pgPool.query(`
+      create table if not exists mhl_datasets (
+        name text primary key,
+        rows_json jsonb not null,
+        meta_json jsonb not null,
+        imported_at timestamptz not null default now()
+      )
+    `);
+    dbReady = true;
+  }
+  return pgPool;
 }
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
@@ -292,6 +369,24 @@ function publicUser(user) {
 }
 
 async function sendDatasets(res) {
+  if (databaseEnabled()) {
+    const db = await getDb();
+    const result = await db.query("select name, meta_json from mhl_datasets order by imported_at desc");
+    const datasets = [await sampleDatasetInfo()];
+    for (const row of result.rows) {
+      const meta = row.meta_json || {};
+      datasets.push({
+        name: row.name,
+        rows: Number(meta.rowCount || 0),
+        firstDate: meta.firstDate,
+        lastDate: meta.lastDate,
+        underlyings: meta.underlyings || [],
+        expiries: meta.expiries || []
+      });
+    }
+    sendJson(res, 200, { datasets, storage: "postgres" });
+    return;
+  }
   await fs.mkdir(dataRoot, { recursive: true });
   const files = await fs.readdir(dataRoot);
   const datasets = [await sampleDatasetInfo()];
@@ -308,7 +403,7 @@ async function sendDatasets(res) {
       expiries: dataset.meta.expiries
     });
   }
-  sendJson(res, 200, { datasets });
+  sendJson(res, 200, { datasets, storage: "file" });
 }
 
 function sendLiveStatus(res) {
@@ -322,6 +417,51 @@ function sendLiveStatus(res) {
     note: provider === "demo-live"
       ? "Demo live feed. Real market ke liye LIVE_QUOTE_URL/API credentials configure karo."
       : "External live quote feed configured."
+  });
+}
+
+async function sendSystemStatus(res) {
+  let database = {
+    configured: databaseEnabled(),
+    mode: databaseEnabled() ? "postgres" : "file",
+    ok: !databaseEnabled()
+  };
+  if (databaseEnabled()) {
+    try {
+      const db = await getDb();
+      await db.query("select 1");
+      database.ok = true;
+    } catch (error) {
+      database.ok = false;
+      database.error = error.message;
+    }
+  }
+
+  sendJson(res, 200, {
+    ok: true,
+    database,
+    liveData: {
+      provider: process.env.LIVE_DATA_PROVIDER || (process.env.LIVE_QUOTE_URL ? "custom-http" : "demo-live"),
+      configured: Boolean(process.env.LIVE_QUOTE_URL),
+      refreshSeconds: Number(process.env.LIVE_REFRESH_SECONDS || 5)
+    },
+    broker: {
+      upstox: {
+        configured: Boolean(process.env.UPSTOX_CLIENT_ID && process.env.UPSTOX_CLIENT_SECRET && process.env.UPSTOX_REDIRECT_URI)
+      },
+      dhan: {
+        configured: Boolean(process.env.DHAN_CLIENT_ID && process.env.DHAN_ACCESS_TOKEN)
+      }
+    },
+    ai: {
+      configured: Boolean(process.env.OPENAI_API_KEY),
+      mode: process.env.OPENAI_API_KEY ? "ready" : "not-configured"
+    },
+    notifications: {
+      telegram: Boolean(process.env.TELEGRAM_BOT_TOKEN),
+      whatsapp: Boolean(process.env.WHATSAPP_ACCESS_TOKEN),
+      email: Boolean(process.env.SMTP_HOST)
+    }
   });
 }
 
@@ -573,9 +713,8 @@ async function importCsv(req, res) {
       warnings: parsed.warnings
     }
   };
-  await fs.mkdir(dataRoot, { recursive: true });
-  await fs.writeFile(path.join(dataRoot, `${name}.json`), JSON.stringify(dataset, null, 2));
-  sendJson(res, 200, { ok: true, dataset: dataset.meta, name });
+  await saveDataset(dataset);
+  sendJson(res, 200, { ok: true, dataset: dataset.meta, name, storage: databaseEnabled() ? "postgres" : "file" });
 }
 
 async function backtest(req, res) {
@@ -587,6 +726,13 @@ async function backtest(req, res) {
 }
 
 async function loadDataset(name) {
+  if (databaseEnabled()) {
+    const db = await getDb();
+    const result = await db.query("select name, rows_json, meta_json from mhl_datasets where name = $1", [name]);
+    if (result.rows[0]) {
+      return { name: result.rows[0].name, rows: result.rows[0].rows_json, meta: result.rows[0].meta_json };
+    }
+  }
   const importPath = path.join(dataRoot, `${name}.json`);
   try {
     return JSON.parse(await fs.readFile(importPath, "utf8"));
@@ -596,6 +742,24 @@ async function loadDataset(name) {
     const parsed = parseOptionCsv(csv);
     return { name: "sample-options", rows: parsed.rows, meta: {} };
   }
+}
+
+async function saveDataset(dataset) {
+  if (databaseEnabled()) {
+    const db = await getDb();
+    await db.query(
+      `insert into mhl_datasets (name, rows_json, meta_json, imported_at)
+       values ($1, $2::jsonb, $3::jsonb, now())
+       on conflict (name) do update set
+         rows_json = excluded.rows_json,
+         meta_json = excluded.meta_json,
+         imported_at = now()`,
+      [dataset.name, JSON.stringify(dataset.rows), JSON.stringify(dataset.meta)]
+    );
+    return;
+  }
+  await fs.mkdir(dataRoot, { recursive: true });
+  await fs.writeFile(path.join(dataRoot, `${dataset.name}.json`), JSON.stringify(dataset, null, 2));
 }
 
 async function sendHistory(url, res) {
