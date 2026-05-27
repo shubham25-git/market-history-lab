@@ -1009,7 +1009,13 @@ async function sendStatic(pathname, res) {
   try {
     const content = await fs.readFile(filePath);
     const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, corsHeaders({ "Content-Type": mimeTypes[ext] || "application/octet-stream" }));
+    const cacheHeader = ext === ".html"
+      ? "no-store, max-age=0"
+      : "public, max-age=60";
+    res.writeHead(200, corsHeaders({
+      "Content-Type": mimeTypes[ext] || "application/octet-stream",
+      "Cache-Control": cacheHeader
+    }));
     res.end(content);
   } catch (error) {
     if (error.code === "ENOENT") {
