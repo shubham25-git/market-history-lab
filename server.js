@@ -15,6 +15,7 @@ const mutableDataRoot = process.env.DATA_DIR || path.join(appRoot, "data");
 const dataRoot = path.join(mutableDataRoot, "imports");
 const usersPath = path.join(mutableDataRoot, "users.json");
 const bundledDataRoot = path.join(appRoot, "data");
+const appVersion = "otp-v7-2026-05-27";
 const cacheMs = 15 * 60 * 1000;
 const cache = new Map();
 const sessions = new Map();
@@ -65,9 +66,24 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, {
         ok: true,
         name: "Market History Lab backend",
+        appVersion,
         mode: "csv-real-engine-v1",
         storage: databaseEnabled() ? "postgres" : "file",
         liveProvider: process.env.LIVE_DATA_PROVIDER || (process.env.LIVE_QUOTE_URL ? "custom-http" : "demo-live")
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/version" && req.method === "GET") {
+      const rootIndex = await fs.readFile(path.join(appRoot, "index.html"), "utf8").catch(() => "");
+      const publishIndex = await fs.readFile(path.join(publicRoot, "index.html"), "utf8").catch(() => "");
+      sendJson(res, 200, {
+        ok: true,
+        appVersion,
+        homepageSource: "root-index.html",
+        rootHasMobileOtp: rootIndex.includes("Mobile OTP"),
+        publishHasMobileOtp: publishIndex.includes("Mobile OTP"),
+        otpRoutes: ["/api/auth/otp/request", "/api/auth/otp/verify"]
       });
       return;
     }
