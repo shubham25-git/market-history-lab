@@ -1001,8 +1001,9 @@ function requestHttps(options) {
 async function sendStatic(pathname, res) {
   const requestedPath = pathname === "/" ? "/index.html" : pathname;
   const decodedPath = decodeURIComponent(requestedPath);
-  const filePath = path.resolve(publicRoot, `.${decodedPath}`);
-  if (!filePath.startsWith(publicRoot)) {
+  const baseRoot = decodedPath === "/index.html" ? appRoot : publicRoot;
+  const filePath = path.resolve(baseRoot, `.${decodedPath}`);
+  if (!filePath.startsWith(baseRoot)) {
     sendJson(res, 403, { error: "Forbidden" });
     return;
   }
