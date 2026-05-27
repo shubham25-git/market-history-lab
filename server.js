@@ -19,6 +19,7 @@ const cacheMs = 15 * 60 * 1000;
 const cache = new Map();
 const sessions = new Map();
 const brokerConnections = new Map();
+const otpStore = new Map();
 let pgPool = null;
 let dbReady = false;
 
@@ -83,6 +84,16 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname === "/api/auth/login" && req.method === "POST") {
       await loginUser(req, res);
+      return;
+    }
+
+    if (url.pathname === "/api/auth/otp/request" && req.method === "POST") {
+      await requestOtp(req, res);
+      return;
+    }
+
+    if (url.pathname === "/api/auth/otp/verify" && req.method === "POST") {
+      await verifyOtp(req, res);
       return;
     }
 
@@ -216,14 +227,107 @@ async function registerUser(req, res) {
 
 async function loginUser(req, res) {
   const body = await readJson(req);
-  const email = String(body.email || "").trim().toLowerCase();
+  const login = String(body.email || body.phone || "").trim();
+  const email = login.toLowerCase();
+  const phone = normalizePhone(login);
   const password = String(body.password || "");
   const store = await readUsers();
-  const user = store.users.find((item) => item.email === email);
+  const user = store.users.find((item) => item.email === email || (phone && item.phone === phone));
   if (!user || !verifyPassword(password, user.salt, user.passwordHash)) {
-    sendJson(res, 401, { error: "Email ya password galat hai." });
+    sendJson(res, 401, { error: "Email/mobile ya password galat hai." });
     return;
   }
+  const token = createSession(user);
+  sendJson(res, 200, { ok: true, token, user: publicUser(user) });
+}
+
+async function requestOtp(req, res) {
+  const body = await readJson(req);
+  const phone = normalizePhone(body.phone);
+  if (!phone) {
+    sendJson(res, 400, { error: "Valid Indian mobile number enter karo." });
+    return;
+  }
+  const otp = String(crypto.randomInt(100000, 1000000));
+  const expiresAt = Date.now() + 5 * 60 * 1000;
+  otpStore.set(phone, { otp, expiresAt, attempts: 0 });
+
+  const smsConfigured = Boolean(process.env.SMS_OTP_WEBHOOK_URL);
+  if (smsConfigured) {
+    try {
+      await sendOtpSms(phone, otp);
+    } catch (error) {
+      otpStore.delete(phone);
+      sendJson(res, 502, { error: `SMS provider error: ${error.message}` });
+      return;
+    }
+  }
+
+  sendJson(res, 200, {
+    ok: true,
+    phone,
+    expiresInSeconds: 300,
+    smsConfigured,
+    demoOtp: smsConfigured ? undefined : otp,
+    message: smsConfigured ? "OTP mobile par bhej diya." : `Demo OTP: ${otp}`
+  });
+}
+
+async function verifyOtp(req, res) {
+  const body = await readJson(req);
+  const phone = normalizePhone(body.phone);
+  const otp = String(body.otp || "").trim();
+  if (!phone || !otp) {
+    sendJson(res, 400, { error: "Mobile number aur OTP dono required hain." });
+    return;
+  }
+  const record = otpStore.get(phone);
+  if (!record || record.expiresAt < Date.now()) {
+    otpStore.delete(phone);
+    sendJson(res, 400, { error: "OTP expire ho gaya. Naya OTP bhejo." });
+    return;
+  }
+  if (record.otp !== otp) {
+    record.attempts += 1;
+    if (record.attempts >= 5) otpStore.delete(phone);
+    sendJson(res, 401, { error: "OTP galat hai." });
+    return;
+  }
+
+  const store = await readUsers();
+  let user = store.users.find((item) => item.phone === phone);
+  const password = String(body.password || "");
+  if (!user) {
+    const name = String(body.name || "").trim();
+    if (!name || name.length < 2) {
+      sendJson(res, 400, { error: "New account ke liye name required hai." });
+      return;
+    }
+    if (password.length < 6) {
+      sendJson(res, 400, { error: "Password kam se kam 6 characters ka hona chahiye." });
+      return;
+    }
+    const auth = hashPassword(password);
+    user = {
+      id: crypto.randomUUID(),
+      name,
+      email: phoneEmail(phone),
+      phone,
+      salt: auth.salt,
+      passwordHash: auth.hash,
+      credits: 25,
+      plan: "Starter",
+      createdAt: new Date().toISOString()
+    };
+    store.users.push(user);
+  } else if (password.length >= 6) {
+    const auth = hashPassword(password);
+    user.salt = auth.salt;
+    user.passwordHash = auth.hash;
+  }
+
+  otpStore.delete(phone);
+  await writeUsers(store);
   const token = createSession(user);
   sendJson(res, 200, { ok: true, token, user: publicUser(user) });
 }
@@ -253,7 +357,7 @@ async function readUsers() {
   if (databaseEnabled()) {
     const db = await getDb();
     const result = await db.query(`
-      select id, name, email, salt, password_hash as "passwordHash", credits, plan, created_at as "createdAt"
+      select id, name, email, phone, salt, password_hash as "passwordHash", credits, plan, created_at as "createdAt"
       from mhl_users
       order by created_at desc
     `);
@@ -274,16 +378,17 @@ async function writeUsers(store) {
     const db = await getDb();
     for (const user of store.users) {
       await db.query(
-        `insert into mhl_users (id, name, email, salt, password_hash, credits, plan, created_at)
-         values ($1, $2, $3, $4, $5, $6, $7, $8)
+        `insert into mhl_users (id, name, email, phone, salt, password_hash, credits, plan, created_at)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          on conflict (id) do update set
            name = excluded.name,
            email = excluded.email,
+           phone = excluded.phone,
            salt = excluded.salt,
            password_hash = excluded.password_hash,
            credits = excluded.credits,
            plan = excluded.plan`,
-        [user.id, user.name, user.email, user.salt, user.passwordHash, Number(user.credits ?? 25), user.plan || "Starter", user.createdAt || new Date().toISOString()]
+        [user.id, user.name, user.email, user.phone || null, user.salt, user.passwordHash, Number(user.credits ?? 25), user.plan || "Starter", user.createdAt || new Date().toISOString()]
       );
     }
     return;
@@ -316,6 +421,8 @@ async function getDb() {
         created_at timestamptz not null default now()
       )
     `);
+    await pgPool.query("alter table mhl_users add column if not exists phone text");
+    await pgPool.query("create unique index if not exists mhl_users_phone_unique on mhl_users(phone) where phone is not null");
     await pgPool.query(`
       create table if not exists mhl_datasets (
         name text primary key,
@@ -359,13 +466,27 @@ function getBearerToken(req) {
 }
 
 function publicUser(user) {
+  const internalPhoneEmail = String(user.email || "").endsWith("@phone.market-history-lab.local");
   return {
     id: user.id,
     name: user.name,
-    email: user.email,
+    email: internalPhoneEmail ? "" : user.email,
+    phone: user.phone || "",
     credits: Number(user.credits ?? 25),
     plan: user.plan || "Starter"
   };
+}
+
+function normalizePhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
+  if (digits.length >= 10 && digits.length <= 15) return `+${digits}`;
+  return "";
+}
+
+function phoneEmail(phone) {
+  return `${String(phone).replace(/\D/g, "")}@phone.market-history-lab.local`;
 }
 
 async function sendDatasets(res) {
@@ -456,6 +577,11 @@ async function sendSystemStatus(res) {
     ai: {
       configured: Boolean(process.env.OPENAI_API_KEY),
       mode: process.env.OPENAI_API_KEY ? "ready" : "not-configured"
+    },
+    otp: {
+      configured: Boolean(process.env.SMS_OTP_WEBHOOK_URL),
+      demoMode: !process.env.SMS_OTP_WEBHOOK_URL,
+      ttlSeconds: 300
     },
     notifications: {
       telegram: Boolean(process.env.TELEGRAM_BOT_TOKEN),
@@ -825,6 +951,27 @@ async function fetchYahooHistory(asset) {
 
 function requestText(url, headers = {}) {
   return requestHttps({ method: "GET", url, headers });
+}
+
+function sendOtpSms(phone, otp) {
+  const url = new URL(process.env.SMS_OTP_WEBHOOK_URL);
+  const headers = {
+    "Content-Type": "application/json"
+  };
+  if (process.env.SMS_OTP_AUTH_HEADER) {
+    headers.Authorization = process.env.SMS_OTP_AUTH_HEADER;
+  }
+  return requestHttps({
+    method: "POST",
+    url,
+    headers,
+    body: JSON.stringify({
+      phone,
+      otp,
+      app: "Market History Lab",
+      message: `Market History Lab OTP: ${otp}. Ye OTP 5 minutes ke liye valid hai.`
+    })
+  });
 }
 
 function requestHttps(options) {
