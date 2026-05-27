@@ -268,9 +268,101 @@
         gap: 16px;
       }
 
+      .history-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .history-card {
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      .history-card span,
+      .terminal-cell span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .history-card strong,
+      .terminal-cell strong {
+        display: block;
+        margin-top: 5px;
+        font-size: 18px;
+      }
+
+      .history-card p {
+        margin: 8px 0 14px;
+      }
+
+      .history-card a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 36px;
+        padding: 0 12px;
+        border: 1px solid #bfe8e2;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 800;
+        text-decoration: none;
+      }
+
       .tool-row {
         justify-content: space-between;
         margin-bottom: 14px;
+      }
+
+      .terminal-strip {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(140px, 1fr));
+        gap: 10px;
+        margin: 14px 0;
+      }
+
+      .terminal-cell {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: linear-gradient(180deg, #ffffff, #f3fbf9);
+      }
+
+      .builder-lab {
+        display: grid;
+        grid-template-columns: 1.15fr .85fr;
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .quick-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .quick-action {
+        display: grid;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface-2);
+      }
+
+      .quick-action button {
+        justify-self: start;
+      }
+
+      .margin-grid {
+        display: grid;
+        gap: 9px;
       }
 
       .input-group {
@@ -428,14 +520,16 @@
         min-height: 360px;
         border: 1px solid var(--line);
         border-radius: 12px;
-        background: linear-gradient(180deg, #ffffff, #f4fbfa);
-        overflow: hidden;
+        background: linear-gradient(180deg, #fbfefd, #f1faf8);
+        overflow: auto;
       }
 
       .chart-svg {
         display: block;
         width: 100%;
+        min-width: 720px;
         height: 360px;
+        font-family: inherit;
       }
 
       .trade-ticket {
@@ -530,7 +624,7 @@
 
       .auth-tabs {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(3, 1fr);
         gap: 8px;
       }
 
@@ -546,18 +640,101 @@
         font-weight: 750;
       }
 
+      .otp-fields {
+        display: grid;
+        gap: 10px;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      .learning-layout {
+        display: grid;
+        gap: 14px;
+      }
+
+      .learning-hero {
+        display: grid;
+        grid-template-columns: 1.4fr .9fr;
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .learning-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 16px;
+      }
+
+      .learning-card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 18px;
+      }
+
+      .learning-card p {
+        margin: 0 0 10px;
+      }
+
+      .tag-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .tag {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: var(--surface-2);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .example-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .pattern-example {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfdfc;
+        padding: 12px;
+      }
+
+      .mini-chart {
+        width: 100%;
+        height: 126px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: linear-gradient(#fff, #fff), repeating-linear-gradient(0deg, transparent 0 31px, rgba(8, 62, 57, .08) 32px);
+        margin: 8px 0;
+      }
+
+      .concept-list {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
       @media (max-width: 1180px) {
         .topbar { grid-template-columns: 1fr; }
         .nav { justify-content: flex-start; }
         .account { justify-content: flex-start; flex-wrap: wrap; }
-        .grid-2, .simulator-layout { grid-template-columns: 1fr; }
+        .grid-2, .simulator-layout, .builder-lab, .learning-hero { grid-template-columns: 1fr; }
+        .terminal-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .strategy-grid { grid-template-columns: repeat(3, minmax(150px, 1fr)); }
       }
 
       @media (max-width: 760px) {
         .shell { width: min(100% - 16px, 1540px); margin-top: 10px; }
         .banner { grid-template-columns: 1fr; }
-        .metric-row, .grid-3, .chain-meta { grid-template-columns: 1fr; }
+        .metric-row, .grid-3, .chain-meta, .history-grid, .terminal-strip, .quick-grid, .example-grid, .concept-list { grid-template-columns: 1fr; }
         .strategy-grid { grid-template-columns: repeat(2, minmax(130px, 1fr)); gap: 10px; }
         .expiry-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .nav button { flex: 1 1 calc(50% - 6px); }
@@ -576,12 +753,17 @@
         </div>
         <nav class="nav" id="nav">
           <button class="active" data-page="home" type="button">Home</button>
+          <button data-page="dashboard" type="button">Dashboard</button>
           <button data-page="builder" type="button">Builder</button>
           <button data-page="basket" type="button">Basket</button>
           <button data-page="simulator" type="button">Simulator</button>
-          <button data-page="data" type="button">Data</button>
+          <button data-page="history" type="button">OHLC Library</button>
+          <button data-page="data" type="button">Data Engine</button>
           <button data-page="broker" type="button">Broker</button>
           <button data-page="analytics" type="button">Analytics</button>
+          <button data-page="scanner" type="button">Scanner</button>
+          <button data-page="risk" type="button">Risk</button>
+          <button data-page="admin" type="button">Admin</button>
           <button data-page="learning" type="button">Learning</button>
         </nav>
         <div class="account">
@@ -603,12 +785,14 @@
               <span class="chip active">25 free credits</span>
               <span class="chip">Builder</span>
               <span class="chip">Paper simulator</span>
+              <span class="chip">OHLC library</span>
               <span class="chip">Payoff analytics</span>
             </div>
           </div>
           <div class="button-row">
             <button class="primary" data-page="builder" type="button">Open Builder</button>
             <button class="secondary" data-page="simulator" type="button">Run Simulator</button>
+            <button class="ghost" data-page="history" type="button">Open OHLC</button>
           </div>
         </section>
 
@@ -661,7 +845,106 @@
                 </div>
               </div>
             </article>
+            <article class="panel">
+              <div class="panel-head"><h2>OHLC Library</h2><button class="secondary" data-page="history" type="button">Open</button></div>
+              <div class="panel-body">
+                <p>Nifty, Sensex, Gold, Bitcoin aur Ethereum ke previous OHLC pages ko yahin se access karo.</p>
+                <div class="summary-list">
+                  <div class="summary-item"><span>Assets</span><strong>5+</strong></div>
+                  <div class="summary-item"><span>Use case</span><strong>History + learning</strong></div>
+                </div>
+              </div>
+            </article>
+            <article class="panel">
+              <div class="panel-head"><h2>Scanner + Risk Lab</h2><button class="secondary" data-page="scanner" type="button">Open</button></div>
+              <div class="panel-body">
+                <p>High IV, OI breakout, premium decay, POP, Greeks aur portfolio risk ko ek jagah monitor karo.</p>
+                <div class="summary-list">
+                  <div class="summary-item"><span>Scanners</span><strong>5</strong></div>
+                  <div class="summary-item"><span>Risk controls</span><strong>Daily loss + margin</strong></div>
+                </div>
+              </div>
+            </article>
           </div>
+        </section>
+
+        <section class="page" id="page-dashboard">
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>User Dashboard</h2>
+                <button class="secondary" data-action="save-strategy" type="button">Save Current Strategy</button>
+              </div>
+              <div class="panel-body">
+                <div class="summary-list" id="dashboardSummary"></div>
+                <h3>Saved Strategies</h3>
+                <div class="summary-list" id="savedStrategies"></div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Trade Journal & Notes</h2>
+                <button class="primary" data-action="save-note" type="button">Save Note</button>
+              </div>
+              <div class="panel-body trade-ticket">
+                <label>Note
+                  <input id="journalNote" placeholder="Example: short straddle me SL jaldi hit hua">
+                </label>
+                <div class="summary-list" id="journalList"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-history">
+          <section class="panel">
+            <div class="panel-head">
+              <h2>OHLC Market History Library</h2>
+              <button class="secondary" data-page="builder" type="button">Back to Options Lab</button>
+            </div>
+            <div class="panel-body">
+              <p>Purana OHLC section remove nahi kiya gaya hai. Ye library beginner ko market history, candle examples aur asset-wise previous data dekhne ke liye rakhi gayi hai.</p>
+              <div class="history-grid">
+                <article class="history-card">
+                  <span>Indian index</span>
+                  <strong>Nifty OHLC</strong>
+                  <p>Daily, weekly, monthly candle history aur beginner-friendly notes.</p>
+                  <a href="/nifty-ohlc.html">Open Nifty</a>
+                </article>
+                <article class="history-card">
+                  <span>Indian index</span>
+                  <strong>Sensex OHLC</strong>
+                  <p>Large-cap index movement history with candle context.</p>
+                  <a href="/sensex-ohlc.html">Open Sensex</a>
+                </article>
+                <article class="history-card">
+                  <span>Commodity</span>
+                  <strong>Gold OHLC</strong>
+                  <p>XAU/Gold history for trend, range and volatility study.</p>
+                  <a href="/gold-ohlc.html">Open Gold</a>
+                </article>
+                <article class="history-card">
+                  <span>Crypto</span>
+                  <strong>Bitcoin OHLC</strong>
+                  <p>BTC historical candles for swing and volatility examples.</p>
+                  <a href="/bitcoin-ohlc.html">Open BTC</a>
+                </article>
+                <article class="history-card">
+                  <span>Crypto</span>
+                  <strong>Ethereum OHLC</strong>
+                  <p>ETH history and candle movement reference.</p>
+                  <a href="/ethereum-ohlc.html">Open ETH</a>
+                </article>
+                <article class="history-card">
+                  <span>Learning</span>
+                  <strong>Pattern Guide</strong>
+                  <p>FVG, OB, BOS, CHoCH aur candlestick guide for beginners.</p>
+                  <a href="/" data-page="learning">Open Learning</a>
+                </article>
+              </div>
+            </div>
+          </section>
         </section>
 
         <section class="page" id="page-data">
@@ -730,9 +1013,159 @@
                     <input id="btSl" inputmode="numeric" value="30">
                   </label>
                 </div>
+                <div class="grid-3">
+                  <label>Strike selection
+                    <select id="btStrikeMode">
+                      <option>ATM</option>
+                      <option>OTM by points</option>
+                      <option>Premium based</option>
+                      <option>Delta based</option>
+                      <option>Straddle width</option>
+                    </select>
+                  </label>
+                  <label>Target %
+                    <input id="btTarget" inputmode="numeric" value="45">
+                  </label>
+                  <label>Max re-entry
+                    <input id="btReentry" inputmode="numeric" value="2">
+                  </label>
+                </div>
+                <div class="grid-3">
+                  <label>Adjustment condition
+                    <select id="btAdjustCondition">
+                      <option>Premium doubles</option>
+                      <option>Spot crosses strike</option>
+                      <option>Time based</option>
+                      <option>Delta change</option>
+                    </select>
+                  </label>
+                  <label>Adjustment action
+                    <select id="btAdjustAction">
+                      <option>Shift CE/PE</option>
+                      <option>Roll hedge</option>
+                      <option>Add hedge</option>
+                      <option>Book partial profit</option>
+                    </select>
+                  </label>
+                  <label>No re-entry after
+                    <input id="btNoReentryAfter" value="14:30">
+                  </label>
+                </div>
                 <div class="summary-list" id="realBacktestResult">
                   <div class="summary-item"><span>Status</span><strong>Basket select karke Run Backtest dabao.</strong></div>
                 </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-scanner">
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Market Scanner</h2>
+                <button class="primary" data-action="run-scanner" type="button">Run Scanner</button>
+              </div>
+              <div class="panel-body trade-ticket">
+                <div class="grid-3">
+                  <label>Scanner type
+                    <select id="scannerType">
+                      <option>High IV scanner</option>
+                      <option>OI breakout scanner</option>
+                      <option>Premium decay scanner</option>
+                      <option>Gamma spike scanner</option>
+                      <option>ATM straddle move scanner</option>
+                    </select>
+                  </label>
+                  <label>IV threshold
+                    <input id="scannerIv" inputmode="numeric" value="20">
+                  </label>
+                  <label>PCR filter
+                    <input id="scannerPcr" inputmode="decimal" value="0.80">
+                  </label>
+                </div>
+                <div class="summary-list" id="scannerResults"></div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Strategy Finder</h2>
+                <button class="secondary" data-action="find-strategy" type="button">Find Best Fit</button>
+              </div>
+              <div class="panel-body trade-ticket">
+                <div class="grid-3">
+                  <label>Goal
+                    <select id="finderGoal">
+                      <option>Delta neutral</option>
+                      <option>Low risk</option>
+                      <option>High theta</option>
+                      <option>80% POP</option>
+                    </select>
+                  </label>
+                  <label>Max risk
+                    <input id="finderRisk" inputmode="numeric" value="5000">
+                  </label>
+                  <label>Market view
+                    <select id="finderView"><option>Range</option><option>Bullish</option><option>Bearish</option><option>Volatile</option></select>
+                  </label>
+                </div>
+                <div class="summary-list" id="finderResults"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-risk">
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Portfolio Greeks</h2>
+                <button class="primary" data-action="refresh-greeks" type="button">Refresh Greeks</button>
+              </div>
+              <div class="panel-body">
+                <div class="summary-list" id="greeksSummary"></div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Risk Management</h2>
+                <button class="secondary" data-action="refresh-risk" type="button">Check Risk</button>
+              </div>
+              <div class="panel-body trade-ticket">
+                <label>Max daily loss
+                  <input id="maxDailyLoss" inputmode="numeric" value="3000">
+                </label>
+                <label>Capital
+                  <input id="riskCapital" inputmode="numeric" value="100000">
+                </label>
+                <label>Alert channel
+                  <select id="alertChannel"><option>In-app</option><option>Email</option><option>Telegram</option><option>WhatsApp</option></select>
+                </label>
+                <div class="summary-list" id="riskSummary"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-admin">
+          <div class="grid-2">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Admin Panel</h2>
+                <button class="secondary" data-action="refresh-admin" type="button">Refresh</button>
+              </div>
+              <div class="panel-body">
+                <div class="summary-list" id="adminSummary"></div>
+                <p>Production me yahi panel user management, subscription, strategy moderation aur data upload logs handle karega.</p>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head"><h2>API Status</h2></div>
+              <div class="panel-body">
+                <div class="summary-list" id="apiStatus"></div>
               </div>
             </section>
           </div>
@@ -793,6 +1226,14 @@
             </div>
           </div>
 
+          <div class="terminal-strip" aria-label="options lab snapshot">
+            <div class="terminal-cell"><span>Day open</span><strong id="dayOpen">54,207.8</strong></div>
+            <div class="terminal-cell"><span>Spot</span><strong id="labSpot">53,710.3</strong></div>
+            <div class="terminal-cell"><span>Future</span><strong id="labFuture">53,895.4</strong></div>
+            <div class="terminal-cell"><span>Synthetic future</span><strong id="labSynth">53,897.2</strong></div>
+            <div class="terminal-cell"><span>Session</span><strong id="labClock">15:30:00</strong></div>
+          </div>
+
           <div class="grid-2">
             <section class="panel">
               <div class="panel-head">
@@ -831,6 +1272,54 @@
                   <button class="chip" data-risk="open" type="button">Open risk</button>
                 </div>
                 <div class="strategy-grid" id="strategyGrid"></div>
+              </div>
+            </section>
+          </div>
+
+          <div class="builder-lab">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Strategy Launchpad</h2>
+                <button class="secondary" data-page="basket" type="button">View Basket</button>
+              </div>
+              <div class="panel-body">
+                <div class="quick-grid">
+                  <article class="quick-action">
+                    <strong>Range day income</strong>
+                    <p>Short straddle/strangle ko paper mode me test karo. Open risk warning enabled.</p>
+                    <button class="secondary" data-quick-strategy="Short Straddle" type="button">Build Short Straddle</button>
+                  </article>
+                  <article class="quick-action">
+                    <strong>Defined risk range</strong>
+                    <p>Iron condor hedges ke saath capped-loss setup banata hai.</p>
+                    <button class="secondary" data-quick-strategy="Short Iron Condor" type="button">Build Iron Condor</button>
+                  </article>
+                  <article class="quick-action">
+                    <strong>Momentum break</strong>
+                    <p>Long straddle/strangle event day move seekhne ke liye.</p>
+                    <button class="secondary" data-quick-strategy="Long Straddle" type="button">Build Long Straddle</button>
+                  </article>
+                  <article class="quick-action">
+                    <strong>Ratio lab</strong>
+                    <p>Call/put ratio spreads me reward aur tail risk compare karo.</p>
+                    <button class="secondary" data-quick-strategy="Call Ratio Spread" type="button">Build Ratio Spread</button>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Margin & Cost Lab</h2>
+                <button class="primary" id="recalcMargin" type="button">Recalculate</button>
+              </div>
+              <div class="panel-body">
+                <div class="margin-grid" id="marginSummary">
+                  <div class="summary-item"><span>Required margin</span><strong>0</strong></div>
+                  <div class="summary-item"><span>Charges estimate</span><strong>0</strong></div>
+                  <div class="summary-item"><span>Max loss note</span><strong>Select strategy</strong></div>
+                </div>
+                <p>Ye paper margin model learning ke liye hai. Real broker margin Upstox/Dhan connection ke baad exact hoga.</p>
               </div>
             </section>
           </div>
@@ -879,6 +1368,9 @@
                 <div class="summary-list" id="liveSummary">
                   <div class="summary-item"><span>Live feed</span><strong>Connecting...</strong></div>
                 </div>
+                <div class="summary-list" id="positionSummary">
+                  <div class="summary-item"><span>Active strategy</span><strong>Select basket from Builder</strong></div>
+                </div>
                 <div class="chart-box" id="chartBox"></div>
               </div>
             </section>
@@ -900,6 +1392,7 @@
                 </label>
                 <button class="secondary" id="refreshLive" type="button">Refresh Live Price</button>
                 <button class="primary" id="placePaperTrade" type="button">Place Paper Trade</button>
+                <button class="ghost" data-page="builder" type="button">Build Straddle / Strangle</button>
                 <p>Each paper trade uses 1 credit. Demo feed market jaisa moves dikhata hai; real live feed ke liye broker/data API key connect hogi.</p>
               </div>
             </aside>
@@ -925,19 +1418,97 @@
         </section>
 
         <section class="page" id="page-learning">
-          <div class="grid-3">
-            <article class="lesson">
-              <strong>Short Straddle</strong>
-              <p>Works best when price remains near ATM. Risk is open on both sides, so beginners should test it only in paper mode first.</p>
-            </article>
-            <article class="lesson">
-              <strong>Iron Condor</strong>
-              <p>Risk-defined range strategy. Profit zone is between short strikes and loss is capped by long hedges.</p>
-            </article>
-            <article class="lesson">
-              <strong>Paper Trading Rule</strong>
-              <p>Before using real money, replay at least 20 sessions and note entry, exit, max loss and mistake reason.</p>
-            </article>
+          <div class="learning-layout">
+            <section class="learning-hero">
+              <article class="learning-card">
+                <strong>Beginner Learning Lab</strong>
+                <p>Yahan candle, OHLC, FVG, OB, liquidity sweep, BOS, CHoCH aur support/resistance ko Hindi + English me simple examples ke saath rakha gaya hai. Ye part beginner ko chart padhne me help karega aur website ko apni original identity dega.</p>
+                <div class="tag-row">
+                  <span class="tag">Nifty</span>
+                  <span class="tag">Sensex</span>
+                  <span class="tag">Gold</span>
+                  <span class="tag">BTC</span>
+                  <span class="tag">ETH</span>
+                  <span class="tag">Candles</span>
+                </div>
+              </article>
+              <article class="learning-card">
+                <strong>OHLC Quick Meaning</strong>
+                <p><b>Open:</b> candle kaha start hui. <b>High:</b> period ka top. <b>Low:</b> period ka bottom. <b>Close:</b> candle kaha end hui.</p>
+                <p>Body momentum batata hai, wick rejection batata hai. Context ke bina candle pattern use mat karo.</p>
+              </article>
+            </section>
+
+            <section class="example-grid">
+              <article class="pattern-example">
+                <strong>Doji Candle</strong>
+                <svg class="mini-chart" viewBox="0 0 260 126" role="img" aria-label="Doji candle example">
+                  <line x1="20" y1="96" x2="240" y2="96" stroke="#dfe9e6" />
+                  <line x1="20" y1="66" x2="240" y2="66" stroke="#dfe9e6" />
+                  <line x1="60" y1="82" x2="60" y2="22" stroke="#0f8f7e" stroke-width="3" />
+                  <rect x="50" y="50" width="20" height="5" fill="#0f8f7e" />
+                  <line x1="120" y1="102" x2="120" y2="26" stroke="#d94a4a" stroke-width="3" />
+                  <rect x="110" y="63" width="20" height="4" fill="#d94a4a" />
+                  <line x1="180" y1="86" x2="180" y2="28" stroke="#0f8f7e" stroke-width="3" />
+                  <rect x="170" y="56" width="20" height="6" fill="#0f8f7e" />
+                </svg>
+                <p>Open aur close almost same. Hindi: market decision nahi le pa raha. English: indecision candle.</p>
+              </article>
+              <article class="pattern-example">
+                <strong>Outside Bar</strong>
+                <svg class="mini-chart" viewBox="0 0 260 126" role="img" aria-label="Outside bar example">
+                  <line x1="20" y1="96" x2="240" y2="96" stroke="#dfe9e6" />
+                  <line x1="20" y1="66" x2="240" y2="66" stroke="#dfe9e6" />
+                  <line x1="82" y1="78" x2="82" y2="48" stroke="#0f8f7e" stroke-width="3" />
+                  <rect x="72" y="58" width="20" height="14" fill="#0f8f7e" />
+                  <line x1="138" y1="104" x2="138" y2="22" stroke="#d94a4a" stroke-width="3" />
+                  <rect x="126" y="38" width="24" height="50" fill="#d94a4a" />
+                  <text x="122" y="116" fill="#5c6d69" font-size="12">range breaks</text>
+                </svg>
+                <p>Current candle previous candle ka high aur low dono todti hai. Range expansion ka signal ho sakta hai.</p>
+              </article>
+              <article class="pattern-example">
+                <strong>FVG Gap</strong>
+                <svg class="mini-chart" viewBox="0 0 260 126" role="img" aria-label="Fair value gap example">
+                  <rect x="104" y="42" width="62" height="28" fill="#dff5ef" stroke="#0f8f7e" stroke-dasharray="4 3" />
+                  <line x1="55" y1="96" x2="55" y2="60" stroke="#0f8f7e" stroke-width="3" />
+                  <rect x="45" y="76" width="20" height="15" fill="#0f8f7e" />
+                  <line x1="120" y1="84" x2="120" y2="25" stroke="#0f8f7e" stroke-width="3" />
+                  <rect x="108" y="34" width="24" height="43" fill="#0f8f7e" />
+                  <line x1="188" y1="72" x2="188" y2="30" stroke="#0f8f7e" stroke-width="3" />
+                  <rect x="178" y="35" width="20" height="22" fill="#0f8f7e" />
+                  <text x="112" y="62" fill="#064f49" font-size="12">FVG</text>
+                </svg>
+                <p>Fast move me imbalance zone banta hai. Hindi: price kabhi kabhi is gap ko retest karta hai.</p>
+              </article>
+            </section>
+
+            <section class="concept-list">
+              <article class="learning-card">
+                <strong>Order Block (OB)</strong>
+                <p>Strong move se pehle last opposite candle ka zone. Buyers/sellers ka institutional area maan kar watchlist me mark karte hain.</p>
+              </article>
+              <article class="learning-card">
+                <strong>Liquidity Sweep</strong>
+                <p>Price previous high/low ke upar-niche jaake stop-loss collect karta hai, phir reverse kar sakta hai. Confirmation candle zaroor dekho.</p>
+              </article>
+              <article class="learning-card">
+                <strong>BOS</strong>
+                <p>Break of Structure: trend ka important high/low break hota hai. English: market structure continuation clue.</p>
+              </article>
+              <article class="learning-card">
+                <strong>CHoCH</strong>
+                <p>Change of Character: existing trend weak padta hai aur opposite structure break hota hai. Reversal warning ho sakti hai.</p>
+              </article>
+              <article class="learning-card">
+                <strong>Support / Resistance</strong>
+                <p>Jahan price baar-baar react karta hai. Single line nahi, ek zone socho. Break + retest beginner ke liye clean method hai.</p>
+              </article>
+              <article class="learning-card">
+                <strong>Options Paper Rule</strong>
+                <p>Short straddle, strangle, iron condor jaise strategies ko real money se pehle replay simulator me 20 sessions test karo.</p>
+              </article>
+            </section>
           </div>
         </section>
 
@@ -964,19 +1535,35 @@
           <div class="auth-tabs">
             <button class="active" id="loginTab" type="button">Login</button>
             <button id="registerTab" type="button">Register</button>
+            <button id="otpTab" type="button">Mobile OTP</button>
           </div>
           <label id="nameField">Name
             <input id="authName" autocomplete="name" placeholder="Your name">
           </label>
-          <label>Email
+          <label id="emailField">Email / Mobile
             <input id="authEmail" autocomplete="email" placeholder="you@example.com">
           </label>
-          <label>Password
+          <label id="passwordField">Password
             <input id="authPassword" type="password" autocomplete="current-password" placeholder="Minimum 6 characters">
           </label>
+          <div class="otp-fields" id="otpFields" hidden>
+            <label>Mobile number
+              <input id="authPhone" inputmode="numeric" autocomplete="tel" placeholder="10 digit mobile number">
+            </label>
+            <button class="secondary" id="sendOtp" type="button">Send OTP</button>
+            <label>OTP
+              <input id="authOtp" inputmode="numeric" autocomplete="one-time-code" placeholder="6 digit OTP">
+            </label>
+            <label>Name
+              <input id="otpName" autocomplete="name" placeholder="Name for new account">
+            </label>
+            <label>Set password
+              <input id="otpPassword" type="password" autocomplete="new-password" placeholder="Minimum 6 characters">
+            </label>
+          </div>
           <div class="auth-message" id="authMessage"></div>
           <button class="primary" id="authSubmit" type="button">Login</button>
-          <p>Starter account me 25 free credits milenge. Ye local backend auth setup hai; production me domain + database + email verification add karenge.</p>
+          <p>Starter account me 25 free credits milenge. Mobile OTP abhi demo mode me OTP screen par dikhata hai; SMS provider connect karne par OTP mobile par jayega.</p>
         </div>
       </div>
     </div>
@@ -1058,10 +1645,19 @@
         authClose: document.querySelector("#authClose"),
         loginTab: document.querySelector("#loginTab"),
         registerTab: document.querySelector("#registerTab"),
+        otpTab: document.querySelector("#otpTab"),
         nameField: document.querySelector("#nameField"),
+        emailField: document.querySelector("#emailField"),
+        passwordField: document.querySelector("#passwordField"),
         authName: document.querySelector("#authName"),
         authEmail: document.querySelector("#authEmail"),
         authPassword: document.querySelector("#authPassword"),
+        otpFields: document.querySelector("#otpFields"),
+        authPhone: document.querySelector("#authPhone"),
+        authOtp: document.querySelector("#authOtp"),
+        otpName: document.querySelector("#otpName"),
+        otpPassword: document.querySelector("#otpPassword"),
+        sendOtp: document.querySelector("#sendOtp"),
         authMessage: document.querySelector("#authMessage"),
         authSubmit: document.querySelector("#authSubmit"),
         homeCredits: document.querySelector("#homeCredits"),
@@ -1080,6 +1676,7 @@
         payoffLarge: document.querySelector("#payoffLarge"),
         replayTime: document.querySelector("#replayTime"),
         liveSummary: document.querySelector("#liveSummary"),
+        positionSummary: document.querySelector("#positionSummary"),
         datasetSelect: document.querySelector("#datasetSelect"),
         datasetName: document.querySelector("#datasetName"),
         csvFile: document.querySelector("#csvFile"),
@@ -1094,10 +1691,32 @@
         btBrokerage: document.querySelector("#btBrokerage"),
         btSlippage: document.querySelector("#btSlippage"),
         btSl: document.querySelector("#btSl"),
+        btStrikeMode: document.querySelector("#btStrikeMode"),
+        btTarget: document.querySelector("#btTarget"),
+        btReentry: document.querySelector("#btReentry"),
+        btAdjustCondition: document.querySelector("#btAdjustCondition"),
+        btAdjustAction: document.querySelector("#btAdjustAction"),
+        btNoReentryAfter: document.querySelector("#btNoReentryAfter"),
         brokerStatus: document.querySelector("#brokerStatus"),
         brokerMessage: document.querySelector("#brokerMessage"),
         dhanClientId: document.querySelector("#dhanClientId"),
-        dhanAccessToken: document.querySelector("#dhanAccessToken")
+        dhanAccessToken: document.querySelector("#dhanAccessToken"),
+        dayOpen: document.querySelector("#dayOpen"),
+        labSpot: document.querySelector("#labSpot"),
+        labFuture: document.querySelector("#labFuture"),
+        labSynth: document.querySelector("#labSynth"),
+        labClock: document.querySelector("#labClock"),
+        marginSummary: document.querySelector("#marginSummary"),
+        dashboardSummary: document.querySelector("#dashboardSummary"),
+        savedStrategies: document.querySelector("#savedStrategies"),
+        journalNote: document.querySelector("#journalNote"),
+        journalList: document.querySelector("#journalList"),
+        scannerResults: document.querySelector("#scannerResults"),
+        finderResults: document.querySelector("#finderResults"),
+        greeksSummary: document.querySelector("#greeksSummary"),
+        riskSummary: document.querySelector("#riskSummary"),
+        adminSummary: document.querySelector("#adminSummary"),
+        apiStatus: document.querySelector("#apiStatus")
       };
 
       function init() {
@@ -1113,7 +1732,15 @@
       function wire() {
         document.addEventListener("click", event => {
           const pageButton = event.target.closest("[data-page]");
-          if (pageButton) showPage(pageButton.dataset.page);
+          if (pageButton) {
+            event.preventDefault();
+            showPage(pageButton.dataset.page);
+          }
+          const actionButton = event.target.closest("[data-action]");
+          if (actionButton) {
+            event.preventDefault();
+            handleAction(actionButton.dataset.action);
+          }
         });
         el.asset.addEventListener("change", () => {
           state.asset = el.asset.value;
@@ -1128,6 +1755,13 @@
           renderCredits();
         });
         document.querySelector("#addFuture").addEventListener("click", addFutureLeg);
+        document.querySelectorAll("[data-quick-strategy]").forEach(button => {
+          button.addEventListener("click", () => {
+            applyStrategy(button.dataset.quickStrategy);
+            showPage("basket");
+          });
+        });
+        document.querySelector("#recalcMargin").addEventListener("click", renderMargin);
         document.querySelector("#strategyFinder").addEventListener("click", () => {
           state.sentiment = "Neutral";
           document.querySelectorAll("[data-sentiment]").forEach(item => item.classList.toggle("active", item.dataset.sentiment === "Neutral"));
@@ -1173,6 +1807,8 @@
         });
         el.loginTab.addEventListener("click", () => setAuthMode("login"));
         el.registerTab.addEventListener("click", () => setAuthMode("register"));
+        el.otpTab.addEventListener("click", () => setAuthMode("otp"));
+        el.sendOtp.addEventListener("click", requestOtp);
         el.authSubmit.addEventListener("click", submitAuth);
         el.logoutBtn.addEventListener("click", logout);
       }
@@ -1183,8 +1819,22 @@
         document.querySelectorAll("#nav [data-page]").forEach(item => item.classList.toggle("active", item.dataset.page === page));
         el.homeHero.style.display = page === "home" ? "grid" : "none";
         if (page === "analytics") renderAnalytics();
+        if (page === "dashboard") renderDashboard();
+        if (page === "scanner") {
+          renderScanner();
+          renderFinder();
+        }
+        if (page === "risk") {
+          renderGreeks();
+          renderRisk();
+        }
+        if (page === "admin") {
+          renderAdmin();
+          loadSystemStatus();
+        }
         if (page === "simulator") {
           renderChart();
+          renderPositions();
           refreshLiveFeed();
         }
         if (page === "data") loadDatasets();
@@ -1198,6 +1848,14 @@
         renderBasket();
         renderAnalytics();
         renderChart();
+        renderMargin();
+        renderPositions();
+        renderDashboard();
+        renderScanner();
+        renderFinder();
+        renderGreeks();
+        renderRisk();
+        renderAdmin();
         renderCredits();
       }
 
@@ -1207,6 +1865,11 @@
         el.spot.textContent = num(meta.spot, 1);
         el.future.textContent = num(meta.fut, 1);
         el.maxPain.textContent = num(meta.maxPain, 0);
+        el.dayOpen.textContent = num(meta.spot + meta.step * 4.9, 1);
+        el.labSpot.textContent = num(meta.spot, 1);
+        el.labFuture.textContent = num(meta.fut, 1);
+        el.labSynth.textContent = num(meta.synth, 1);
+        el.labClock.textContent = new Date().toLocaleTimeString("en-IN", { hour12: false });
         document.querySelector("#ticketStrike").value = meta.atm;
       }
 
@@ -1233,26 +1896,57 @@
       function setAuthMode(mode) {
         state.authMode = mode;
         const isRegister = mode === "register";
-        el.authTitle.textContent = isRegister ? "Create account" : "Login";
-        el.authSubmit.textContent = isRegister ? "Create account" : "Login";
+        const isOtp = mode === "otp";
+        el.authTitle.textContent = isOtp ? "Mobile OTP Login" : (isRegister ? "Create account" : "Login");
+        el.authSubmit.textContent = isOtp ? "Verify OTP & Continue" : (isRegister ? "Create account" : "Login");
         el.nameField.style.display = isRegister ? "grid" : "none";
-        el.loginTab.classList.toggle("active", !isRegister);
+        el.emailField.hidden = isOtp;
+        el.passwordField.hidden = isOtp;
+        el.otpFields.hidden = !isOtp;
+        el.loginTab.classList.toggle("active", mode === "login");
         el.registerTab.classList.toggle("active", isRegister);
+        el.otpTab.classList.toggle("active", isOtp);
         el.authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+        el.authMessage.textContent = "";
+      }
+
+      async function requestOtp() {
+        el.authMessage.textContent = "OTP bhej rahe hain...";
+        try {
+          const response = await fetch("/api/auth/otp/request", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: el.authPhone.value })
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "OTP request failed");
+          el.authMessage.textContent = payload.message || "OTP sent.";
+          if (payload.demoOtp) el.authOtp.value = payload.demoOtp;
+        } catch (error) {
+          el.authMessage.textContent = error.message;
+        }
       }
 
       async function submitAuth() {
         el.authMessage.textContent = "Please wait...";
         const endpoint = state.authMode === "register" ? "/api/auth/register" : "/api/auth/login";
-        try {
-          const response = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+        const body = state.authMode === "otp"
+          ? {
+              phone: el.authPhone.value,
+              otp: el.authOtp.value,
+              name: el.otpName.value,
+              password: el.otpPassword.value
+            }
+          : {
               name: el.authName.value,
               email: el.authEmail.value,
               password: el.authPassword.value
-            })
+            };
+        try {
+          const response = await fetch(state.authMode === "otp" ? "/api/auth/otp/verify" : endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
           });
           const payload = await response.json();
           if (!response.ok) throw new Error(payload.error || "Auth failed");
@@ -1427,6 +2121,7 @@
       function renderBasket() {
         if (!state.basket.length) {
           el.basketRows.innerHTML = `<tr><td colspan="5" class="empty">Builder se strategy select karo ya option-chain strike click karo.</td></tr>`;
+          renderMargin();
           return;
         }
         el.basketRows.innerHTML = state.basket.map((leg, index) => `
@@ -1438,7 +2133,213 @@
             <td class="${leg.side === "SELL" ? "positive" : "negative"}">${leg.side === "SELL" ? "+" : "-"}${num(leg.ltp * leg.qty, 2)}</td>
           </tr>
         `).join("");
+        renderMargin();
         renderCredits();
+      }
+
+      function renderMargin() {
+        if (!el.marginSummary) return;
+        const sellPremium = state.basket.filter(item => item.side === "SELL").reduce((sum, item) => sum + item.ltp * item.qty, 0);
+        const buyPremium = state.basket.filter(item => item.side === "BUY").reduce((sum, item) => sum + item.ltp * item.qty, 0);
+        const shortLegs = state.basket.filter(item => item.side === "SELL").length;
+        const hedgeLegs = state.basket.filter(item => item.side === "BUY").length;
+        const meta = data[state.asset];
+        const openRisk = shortLegs > hedgeLegs;
+        const margin = !state.basket.length ? 0 : Math.max(18000, shortLegs * meta.step * 180 - hedgeLegs * meta.step * 78 + Math.max(0, buyPremium - sellPremium) * 18);
+        const charges = state.basket.length * 42 + Math.abs(sellPremium - buyPremium) * 0.08;
+        const risk = estimateRisk();
+        el.marginSummary.innerHTML = `
+          <div class="summary-item"><span>Required margin</span><strong>${num(margin, 0)}</strong></div>
+          <div class="summary-item"><span>Charges estimate</span><strong>${num(charges, 2)}</strong></div>
+          <div class="summary-item"><span>Net premium</span><strong class="${sellPremium - buyPremium >= 0 ? "positive" : "negative"}">${num(sellPremium - buyPremium, 2)}</strong></div>
+          <div class="summary-item"><span>Risk status</span><strong class="${openRisk ? "negative" : "positive"}">${risk}</strong></div>
+        `;
+      }
+
+      function renderPositions() {
+        if (!el.positionSummary) return;
+        if (!state.basket.length) {
+          el.positionSummary.innerHTML = `<div class="summary-item"><span>Active strategy</span><strong>Select basket from Builder</strong></div>`;
+          return;
+        }
+        const credit = state.basket.filter(item => item.side === "SELL").reduce((sum, item) => sum + item.ltp * item.qty, 0);
+        const debit = state.basket.filter(item => item.side === "BUY").reduce((sum, item) => sum + item.ltp * item.qty, 0);
+        const legs = state.basket.map(item => `${item.side} ${item.type}${item.type === "FUT" ? "" : " " + num(item.strike, 0)}`).join(" | ");
+        el.positionSummary.innerHTML = `
+          <div class="summary-item"><span>Active strategy</span><strong>${state.selectedStrategy || "Custom basket"}</strong></div>
+          <div class="summary-item"><span>Legs</span><strong>${legs}</strong></div>
+          <div class="summary-item"><span>Paper premium</span><strong class="${credit - debit >= 0 ? "positive" : "negative"}">${num(credit - debit, 2)}</strong></div>
+          <div class="summary-item"><span>Replay mode</span><strong>${estimateRisk()}</strong></div>
+        `;
+      }
+
+      function readStore(key, fallback = []) {
+        try {
+          return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+        } catch {
+          return fallback;
+        }
+      }
+
+      function writeStore(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+      }
+
+      function handleAction(action) {
+        if (action === "save-strategy") saveCurrentStrategy();
+        if (action === "save-note") saveJournalNote();
+        if (action === "run-scanner") renderScanner(true);
+        if (action === "find-strategy") renderFinder(true);
+        if (action === "refresh-greeks") renderGreeks();
+        if (action === "refresh-risk") renderRisk();
+        if (action === "refresh-admin") renderAdmin();
+      }
+
+      function saveCurrentStrategy() {
+        const saved = readStore("mhl_saved_strategies");
+        saved.unshift({
+          name: state.selectedStrategy || "Custom basket",
+          asset: state.asset,
+          legs: state.basket,
+          savedAt: new Date().toLocaleString("en-IN")
+        });
+        writeStore("mhl_saved_strategies", saved.slice(0, 12));
+        renderDashboard();
+      }
+
+      function saveJournalNote() {
+        const text = el.journalNote?.value?.trim();
+        if (!text) return;
+        const notes = readStore("mhl_journal_notes");
+        notes.unshift({
+          text,
+          strategy: state.selectedStrategy || "No strategy",
+          createdAt: new Date().toLocaleString("en-IN")
+        });
+        writeStore("mhl_journal_notes", notes.slice(0, 20));
+        el.journalNote.value = "";
+        renderDashboard();
+      }
+
+      function renderDashboard() {
+        if (!el.dashboardSummary) return;
+        const saved = readStore("mhl_saved_strategies");
+        const notes = readStore("mhl_journal_notes");
+        const trades = readStore("mhl_paper_trades");
+        el.dashboardSummary.innerHTML = `
+          <div class="summary-item"><span>User</span><strong>${state.user ? state.user.name : "Guest"}</strong></div>
+          <div class="summary-item"><span>Credits</span><strong>${state.user?.credits ?? state.credits}</strong></div>
+          <div class="summary-item"><span>Saved strategies</span><strong>${saved.length}</strong></div>
+          <div class="summary-item"><span>Paper trades</span><strong>${trades.length}</strong></div>
+        `;
+        el.savedStrategies.innerHTML = saved.length
+          ? saved.map(item => `<div class="summary-item"><span>${item.asset} | ${item.savedAt}</span><strong>${item.name} (${item.legs.length} legs)</strong></div>`).join("")
+          : `<div class="summary-item"><span>Status</span><strong>No saved strategy yet</strong></div>`;
+        el.journalList.innerHTML = notes.length
+          ? notes.map(item => `<div class="summary-item"><span>${item.createdAt}</span><strong>${item.text}</strong></div>`).join("")
+          : `<div class="summary-item"><span>Status</span><strong>No notes yet</strong></div>`;
+      }
+
+      function renderScanner(force = false) {
+        if (!el.scannerResults) return;
+        const meta = data[state.asset];
+        const scannerType = document.querySelector("#scannerType")?.value || "High IV scanner";
+        const iv = Number(document.querySelector("#scannerIv")?.value || 20);
+        const pcrLimit = Number(document.querySelector("#scannerPcr")?.value || .8);
+        const rows = [
+          { name: "ATM IV", value: 21.9 + state.expiry * 1.7, signal: "High volatility zone" },
+          { name: "PCR", value: .78 + state.expiry * .03, signal: "Put-call pressure" },
+          { name: "Straddle move", value: premium("CE", meta.atm, meta.spot) + premium("PE", meta.atm, meta.spot), signal: "Expected range input" },
+          { name: "OI breakout", value: meta.atm + meta.step, signal: "Watch short covering" }
+        ];
+        el.scannerResults.innerHTML = `
+          <div class="summary-item"><span>Scanner</span><strong>${scannerType}${force ? " refreshed" : ""}</strong></div>
+          <div class="summary-item"><span>Filter</span><strong>IV > ${iv}, PCR < ${pcrLimit}</strong></div>
+          ${rows.map(row => `<div class="summary-item"><span>${row.name}</span><strong>${typeof row.value === "number" ? num(row.value, 2) : row.value} | ${row.signal}</strong></div>`).join("")}
+        `;
+      }
+
+      function renderFinder(force = false) {
+        if (!el.finderResults) return;
+        const goal = document.querySelector("#finderGoal")?.value || "Delta neutral";
+        const view = document.querySelector("#finderView")?.value || "Range";
+        const pick = view === "Volatile" ? "Long Straddle" : view === "Bullish" ? "Jade Lizard" : view === "Bearish" ? "Put Ratio Spread" : goal.includes("risk") ? "Short Iron Condor" : "Short Straddle";
+        const hedge = pick.includes("Short") && !pick.includes("Iron") ? "Add far OTM hedge before live use" : "Risk is modelled in basket";
+        el.finderResults.innerHTML = `
+          <div class="summary-item"><span>Best fit</span><strong>${pick}${force ? " selected" : ""}</strong></div>
+          <div class="summary-item"><span>Why</span><strong>${goal} + ${view} market view</strong></div>
+          <div class="summary-item"><span>Risk note</span><strong>${hedge}</strong></div>
+          <div class="summary-item"><span>Action</span><strong><button class="secondary" data-quick-strategy="${pick}" type="button">Build ${pick}</button></strong></div>
+        `;
+      }
+
+      function renderGreeks() {
+        if (!el.greeksSummary) return;
+        const credit = state.basket.filter(item => item.side === "SELL").length;
+        const debit = state.basket.filter(item => item.side === "BUY").length;
+        const netDelta = state.basket.reduce((sum, leg) => sum + (leg.side === "BUY" ? 1 : -1) * (leg.type === "CE" ? .48 : leg.type === "PE" ? -.48 : 1), 0);
+        const theta = credit * 72 - debit * 38;
+        const vega = debit * 18 - credit * 14;
+        el.greeksSummary.innerHTML = `
+          <div class="summary-item"><span>Net Delta</span><strong class="${Math.abs(netDelta) < .3 ? "positive" : "negative"}">${num(netDelta, 2)}</strong></div>
+          <div class="summary-item"><span>Theta/day</span><strong class="${theta >= 0 ? "positive" : "negative"}">${num(theta, 2)}</strong></div>
+          <div class="summary-item"><span>Vega</span><strong>${num(vega, 2)}</strong></div>
+          <div class="summary-item"><span>Gamma</span><strong>${num(Math.max(.02, state.basket.length * .04), 2)}</strong></div>
+          <div class="summary-item"><span>Engine</span><strong>Portfolio Greek model ready; exact Greeks need live IV chain/API.</strong></div>
+        `;
+      }
+
+      function renderRisk() {
+        if (!el.riskSummary) return;
+        const maxLoss = Number(document.querySelector("#maxDailyLoss")?.value || 3000);
+        const capital = Number(document.querySelector("#riskCapital")?.value || 100000);
+        const riskPct = capital ? (maxLoss / capital) * 100 : 0;
+        const risk = estimateRisk();
+        el.riskSummary.innerHTML = `
+          <div class="summary-item"><span>Risk per day</span><strong>${num(riskPct, 2)}%</strong></div>
+          <div class="summary-item"><span>Basket risk</span><strong class="${risk === "Open risk" ? "negative" : "positive"}">${risk}</strong></div>
+          <div class="summary-item"><span>Margin alert</span><strong>${state.basket.length ? "Check before replay" : "No position"}</strong></div>
+          <div class="summary-item"><span>Auto hedge suggestion</span><strong>${risk === "Open risk" ? "Buy far OTM hedge" : "Hedge already present/limited risk"}</strong></div>
+        `;
+      }
+
+      function renderAdmin() {
+        if (!el.adminSummary) return;
+        const saved = readStore("mhl_saved_strategies");
+        const notes = readStore("mhl_journal_notes");
+        el.adminSummary.innerHTML = `
+          <div class="summary-item"><span>Users</span><strong>${state.user ? "1 active session" : "Guest mode"}</strong></div>
+          <div class="summary-item"><span>Strategies</span><strong>${saved.length} saved locally</strong></div>
+          <div class="summary-item"><span>Notes</span><strong>${notes.length} journal notes</strong></div>
+          <div class="summary-item"><span>Moderation</span><strong>Strategy sharing module ready for backend database</strong></div>
+        `;
+        if (el.apiStatus) {
+          el.apiStatus.innerHTML = `
+            <div class="summary-item"><span>NSE/history data</span><strong>CSV import + API-ready</strong></div>
+            <div class="summary-item"><span>Broker</span><strong>Upstox/Dhan connect shell ready</strong></div>
+            <div class="summary-item"><span>AI</span><strong>Needs API key before real AI suggestions</strong></div>
+            <div class="summary-item"><span>Notifications</span><strong>In-app ready; WhatsApp/Telegram need provider token</strong></div>
+          `;
+        }
+      }
+
+      async function loadSystemStatus() {
+        if (!el.apiStatus) return;
+        try {
+          const response = await fetch("/api/system/status");
+          const status = await response.json();
+          if (!response.ok) throw new Error(status.error || "System status failed");
+          el.apiStatus.innerHTML = `
+            <div class="summary-item"><span>Database</span><strong class="${status.database.ok ? "positive" : "negative"}">${status.database.mode}${status.database.configured ? " configured" : " not connected"}</strong></div>
+            <div class="summary-item"><span>Live data</span><strong>${status.liveData.configured ? status.liveData.provider : "demo-live"}</strong></div>
+            <div class="summary-item"><span>Upstox</span><strong>${status.broker.upstox.configured ? "Configured" : "Needs env keys"}</strong></div>
+            <div class="summary-item"><span>Dhan</span><strong>${status.broker.dhan.configured ? "Configured" : "Needs token"}</strong></div>
+            <div class="summary-item"><span>AI</span><strong>${status.ai.configured ? "Ready" : "Needs OPENAI_API_KEY"}</strong></div>
+            <div class="summary-item"><span>Notifications</span><strong>TG ${status.notifications.telegram ? "on" : "off"} | WA ${status.notifications.whatsapp ? "on" : "off"} | Email ${status.notifications.email ? "on" : "off"}</strong></div>
+          `;
+        } catch (error) {
+          el.apiStatus.innerHTML = `<div class="summary-item"><span>System status</span><strong>${error.message}</strong></div>`;
+        }
       }
 
       function renderAnalytics() {
@@ -1465,28 +2366,75 @@
       function renderChart() {
         const active = candles.slice(0, state.replay + 1);
         const liveSpot = state.liveQuote?.ltp || data[state.asset].spot;
-        const candleSvg = candles.map(([x, y], index) => {
-          const open = y + (index % 2 ? 16 : -10);
-          const close = y + (index % 2 ? -14 : 16);
-          const high = Math.min(open, close) - 20;
-          const low = Math.max(open, close) + 20;
+        const plot = { left: 58, right: 694, top: 62, bottom: 282 };
+        const series = candles.map(([, y], index) => {
+          const drift = (180 - y) * 2.15 + Math.sin(index * .9) * 18;
+          const close = liveSpot + drift;
+          const open = index ? liveSpot + (180 - candles[index - 1][1]) * 2.15 + Math.sin((index - 1) * .9) * 18 : close - 42;
+          const high = Math.max(open, close) + 32 + (index % 3) * 7;
+          const low = Math.min(open, close) - 30 - (index % 4) * 6;
+          const volume = 58 + ((index * 17) % 70) + (index <= state.replay ? 24 : 0);
+          const x = plot.left + ((plot.right - plot.left) / (candles.length - 1)) * index;
+          return { open, high, low, close, volume, x };
+        });
+        const minPrice = Math.min(...series.map(item => item.low));
+        const maxPrice = Math.max(...series.map(item => item.high));
+        const yFor = price => plot.bottom - ((price - minPrice) / (maxPrice - minPrice || 1)) * (plot.bottom - plot.top);
+        const priceLabels = Array.from({ length: 5 }, (_, index) => maxPrice - ((maxPrice - minPrice) / 4) * index);
+        const last = series[state.replay] || series[0];
+        const candleSvg = series.map((bar, index) => {
           const live = index <= state.replay;
-          const up = close < open;
+          const up = bar.close >= bar.open;
+          const openY = yFor(bar.open);
+          const closeY = yFor(bar.close);
+          const highY = yFor(bar.high);
+          const lowY = yFor(bar.low);
+          const bodyTop = Math.min(openY, closeY);
+          const bodyHeight = Math.max(5, Math.abs(closeY - openY));
+          const color = up ? "#07966f" : "#d64a4a";
+          const volumeHeight = Math.min(42, bar.volume / 3);
           return `
             <g opacity="${live ? 1 : .18}">
-              <line x1="${x}" y1="${high}" x2="${x}" y2="${low}" stroke="${up ? "#0d9f68" : "#d84b4b"}" stroke-width="2"/>
-              <rect x="${x - 6}" y="${Math.min(open, close)}" width="12" height="${Math.abs(close - open) || 2}" rx="2" fill="${up ? "#0d9f68" : "#d84b4b"}"/>
+              <line x1="${bar.x}" y1="${highY}" x2="${bar.x}" y2="${lowY}" stroke="${color}" stroke-width="2.2" stroke-linecap="round"/>
+              <rect x="${bar.x - 7}" y="${bodyTop}" width="14" height="${bodyHeight}" rx="2.5" fill="${color}"/>
+              <rect x="${bar.x - 7}" y="${326 - volumeHeight}" width="14" height="${volumeHeight}" rx="2" fill="${up ? "#b8eadc" : "#f4c8c8"}"/>
             </g>
           `;
         }).join("");
+        const activePath = active.map(([, y], index) => {
+          const point = series[index];
+          return `${index ? "L" : "M"}${point.x} ${yFor(point.close)}`;
+        }).join(" ");
         el.replayTime.textContent = `09:${String(15 + state.replay * 3).padStart(2, "0")}`;
         el.chartBox.innerHTML = `
-          <svg class="chart-svg" viewBox="0 0 620 360" aria-label="paper trading replay chart">
-            <rect width="620" height="360" fill="#ffffff"/>
-            ${[70, 130, 190, 250, 310].map(y => `<path d="M20 ${y}H600" stroke="#edf4f2"/>`).join("")}
-            <path d="${active.map(([x, y], index) => `${index ? "L" : "M"}${x} ${y}`).join(" ")}" fill="none" stroke="#087c73" stroke-width="2.5"/>
+          <svg class="chart-svg" viewBox="0 0 760 360" aria-label="Market History Lab paper trading replay chart">
+            <defs>
+              <linearGradient id="replayArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#bfece5" stop-opacity=".38"/>
+                <stop offset="1" stop-color="#bfece5" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <rect width="760" height="360" fill="#fbfefd"/>
+            <rect x="18" y="18" width="724" height="324" rx="16" fill="#ffffff" stroke="#d9e8e4"/>
+            <text x="38" y="42" fill="#132321" font-size="15" font-weight="850">MHL Replay Chart</text>
+            <text x="38" y="58" fill="#627570" font-size="11" font-weight="700">${state.asset} paper session</text>
+            <text x="604" y="44" fill="#087c73" font-size="15" font-weight="850">${num(liveSpot, 2)}</text>
+            <text x="676" y="44" fill="${(last.close - last.open) >= 0 ? "#07966f" : "#d64a4a"}" font-size="12" font-weight="850">${(last.close - last.open) >= 0 ? "+" : ""}${num(last.close - last.open, 2)}</text>
+            ${priceLabels.map(price => {
+              const y = yFor(price);
+              return `<path d="M${plot.left} ${y}H${plot.right}" stroke="#edf4f2"/><text x="704" y="${y + 4}" fill="#627570" font-size="11" font-weight="700">${num(price, 0)}</text>`;
+            }).join("")}
+            ${[0, 1, 2, 3, 4].map(index => {
+              const x = plot.left + ((plot.right - plot.left) / 4) * index;
+              return `<path d="M${x} ${plot.top}V${plot.bottom}" stroke="#f4f8f7"/><text x="${x - 14}" y="346" fill="#627570" font-size="11" font-weight="700">0${9 + index}:${index ? String(15 + index * 12).padStart(2, "0") : "15"}</text>`;
+            }).join("")}
+            <path d="${activePath} L${last.x} ${plot.bottom} L${plot.left} ${plot.bottom}Z" fill="url(#replayArea)"/>
+            <path d="${activePath}" fill="none" stroke="#087c73" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
             ${candleSvg}
-            <text x="28" y="34" fill="#087c73" font-size="18" font-weight="800">Live paper spot: ${num(liveSpot, 2)}</text>
+            <path d="M${last.x} ${plot.top}V${plot.bottom}" stroke="#087c73" stroke-width="1.5" stroke-dasharray="5 5" opacity=".55"/>
+            <circle cx="${last.x}" cy="${yFor(last.close)}" r="5" fill="#087c73" stroke="#ffffff" stroke-width="3"/>
+            <rect x="${plot.left}" y="300" width="${plot.right - plot.left}" height="1" fill="#e4efec"/>
+            <text x="38" y="326" fill="#627570" font-size="11" font-weight="800">VOL</text>
           </svg>
         `;
       }
@@ -1524,6 +2472,9 @@
         const livePremium = liveRow ? liveRow[type === "CE" ? "call" : "put"] : premium(type, strike, state.liveQuote?.ltp || meta.spot);
         state.basket.push({ side, type, strike, qty, ltp: livePremium });
         state.paperTrades.push({ side, type, strike, qty });
+        const trades = readStore("mhl_paper_trades");
+        trades.unshift({ side, type, strike, qty, asset: state.asset, premium: livePremium, time: new Date().toLocaleString("en-IN") });
+        writeStore("mhl_paper_trades", trades.slice(0, 30));
         state.selectedStrategy = "Paper trade basket";
         state.credits = Math.max(0, state.credits - 1);
         renderAll();
@@ -1629,11 +2580,26 @@
             <div class="summary-item"><span>Notes</span><strong>${payload.result.notes.join(" ")}</strong></div>
           `;
         } catch (error) {
+          const simulated = simulateLocalBacktest(legs);
           el.realBacktestResult.innerHTML = `
-            <div class="summary-item"><span>Backtest failed</span><strong>${error.message}</strong></div>
-            <div class="summary-item"><span>Fix</span><strong>Dataset me same underlying, expiry, strike aur CE/PE candles hone chahiye.</strong></div>
+            <div class="summary-item"><span>Backend status</span><strong>${error.message}</strong></div>
+            <div class="summary-item"><span>Local model P&L</span><strong class="${simulated.pnl >= 0 ? "positive" : "negative"}">${num(simulated.pnl, 2)}</strong></div>
+            <div class="summary-item"><span>Strike mode</span><strong>${el.btStrikeMode.value}</strong></div>
+            <div class="summary-item"><span>Adjustment</span><strong>${el.btAdjustCondition.value} -> ${el.btAdjustAction.value}</strong></div>
+            <div class="summary-item"><span>Re-entry</span><strong>Max ${el.btReentry.value}, no re-entry after ${el.btNoReentryAfter.value}</strong></div>
+            <div class="summary-item"><span>Fix for real engine</span><strong>Licensed full options candles/API connect karte hi exact result aayega.</strong></div>
           `;
         }
+      }
+
+      function simulateLocalBacktest(legs) {
+        const credit = legs.filter(item => item.side === "SELL").length * 820;
+        const debit = legs.filter(item => item.side === "BUY").length * 410;
+        const target = Number(el.btTarget.value || 45) / 100;
+        const sl = Number(el.btSl.value || 30) / 100;
+        const reentry = Number(el.btReentry.value || 0);
+        const edge = (credit - debit) * (1 + target * .35) - Math.max(0, sl * 620 * (reentry ? .6 : 1));
+        return { pnl: edge - Number(el.btBrokerage.value || 20) * Math.max(2, legs.length) };
       }
 
       async function loadBrokerStatus() {
