@@ -15,7 +15,7 @@ const mutableDataRoot = process.env.DATA_DIR || path.join(appRoot, "data");
 const dataRoot = path.join(mutableDataRoot, "imports");
 const usersPath = path.join(mutableDataRoot, "users.json");
 const bundledDataRoot = path.join(appRoot, "data");
-const appVersion = "otp-v7-2026-05-27";
+const appVersion = "real-market-v1-2026-06-07";
 const cacheMs = 15 * 60 * 1000;
 const cache = new Map();
 const sessions = new Map();
@@ -69,7 +69,7 @@ const server = http.createServer(async (req, res) => {
         appVersion,
         mode: "csv-real-engine-v1",
         storage: databaseEnabled() ? "postgres" : "file",
-        liveProvider: process.env.LIVE_DATA_PROVIDER || (process.env.LIVE_QUOTE_URL ? "custom-http" : "demo-live")
+    liveProvider: liveProviderName()
       });
       return;
     }
@@ -133,10 +133,15 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (url.pathname === "/api/live/status" && req.method === "GET") {
-      sendLiveStatus(res);
-      return;
-    }
+if (url.pathname === "/api/live/status" && req.method === "GET") {
+  sendLiveStatus(res);
+  return;
+}
+
+if (url.pathname === "/api/live/test" && req.method === "GET") {
+  await sendLiveTest(url, res);
+  return;
+}
 
     if (url.pathname === "/api/live/quote" && req.method === "GET") {
       await sendLiveQuote(url, res);
@@ -543,17 +548,56 @@ async function sendDatasets(res) {
   sendJson(res, 200, { datasets, storage: "file" });
 }
 
+function liveQuoteConfigured() {
+  return Boolean(process.env.LIVE_QUOTE_URL);
+}
+
+function liveChainConfigured() {
+  return Boolean(process.env.LIVE_CHAIN_URL);
+}
+
+function liveProviderConfigured() {
+  return liveQuoteConfigured() || liveChainConfigured();
+}
+
+function liveProviderName() {
+  return process.env.LIVE_DATA_PROVIDER || (liveProviderConfigured() ? "custom-http" : "demo-live");
+}
+
+function liveRefreshSeconds() {
+  const seconds = Number(process.env.LIVE_REFRESH_SECONDS || 5);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 5;
+}
+
+function liveProviderDetails() {
+  const provider = liveProviderName();
+  return {
+    provider,
+    configured: liveProviderConfigured(),
+    quoteConfigured: liveQuoteConfigured(),
+    chainConfigured: liveChainConfigured(),
+    refreshSeconds: liveRefreshSeconds(),
+    mode: provider === "demo-live" ? "simulated-live-paper" : "external-live-feed"
+  };
+}
+
 function sendLiveStatus(res) {
-  const provider = process.env.LIVE_DATA_PROVIDER || (process.env.LIVE_QUOTE_URL ? "custom-http" : "demo-live");
+  const details = liveProviderDetails();
   sendJson(res, 200, {
     ok: true,
-    provider,
-    mode: provider === "demo-live" ? "simulated-live-paper" : "external-live-feed",
-    hasExternalUrl: Boolean(process.env.LIVE_QUOTE_URL),
-    refreshSeconds: Number(process.env.LIVE_REFRESH_SECONDS || 5),
-    note: provider === "demo-live"
-      ? "Demo live feed. Real market ke liye LIVE_QUOTE_URL/API credentials configure karo."
-      : "External live quote feed configured."
+    ...details,
+    acceptedPlaceholders: ["{underlying}", "{symbol}", "{label}"],
+    env: [
+      "LIVE_DATA_PROVIDER",
+      "LIVE_QUOTE_URL",
+      "LIVE_CHAIN_URL",
+      "LIVE_API_KEY",
+      "LIVE_API_TOKEN",
+      "LIVE_AUTH_HEADER"
+    ],
+    note: details.configured
+      ? "External live feed configured. /api/live/test?underlying=NIFTY se provider test karo."
+      : "Demo live feed. Real market ke liye provider URL/API credentials configure karo."
   });
 }
 
@@ -577,11 +621,7 @@ async function sendSystemStatus(res) {
   sendJson(res, 200, {
     ok: true,
     database,
-    liveData: {
-      provider: process.env.LIVE_DATA_PROVIDER || (process.env.LIVE_QUOTE_URL ? "custom-http" : "demo-live"),
-      configured: Boolean(process.env.LIVE_QUOTE_URL),
-      refreshSeconds: Number(process.env.LIVE_REFRESH_SECONDS || 5)
-    },
+    liveData: liveProviderDetails(),
     broker: {
       upstox: {
         configured: Boolean(process.env.UPSTOX_CLIENT_ID && process.env.UPSTOX_CLIENT_SECRET && process.env.UPSTOX_REDIRECT_URI)
@@ -735,6 +775,29 @@ function brokerSessionKey(req) {
   return headerKey ? `guest:${String(headerKey)}` : "";
 }
 
+async function sendLiveTest(url, res) {
+  const underlying = String(url.searchParams.get("underlying") || "NIFTY").toUpperCase();
+  if (!liveAssets[underlying]) {
+    sendJson(res, 404, { error: "Unknown live underlying." });
+    return;
+  }
+  const quote = await fetchExternalLiveQuote(underlying);
+  const chain = await fetchExternalLiveChain(underlying, quote || demoLiveQuote(underlying));
+  sendJson(res, 200, {
+    ok: true,
+    underlying,
+    ...liveProviderDetails(),
+    quoteOk: Boolean(quote),
+    chainOk: Boolean(chain?.rows?.length),
+    chainRows: chain?.rows?.length || 0,
+    sampleQuote: quote || null,
+    sampleChainRow: chain?.rows?.[0] || null,
+    note: quote || chain
+      ? "Provider response parse ho rahi hai."
+      : "Provider env missing hai ya response expected format me nahi mila."
+  });
+}
+
 async function sendLiveQuote(url, res) {
   const underlying = String(url.searchParams.get("underlying") || "NIFTY").toUpperCase();
   if (!liveAssets[underlying]) {
@@ -742,7 +805,10 @@ async function sendLiveQuote(url, res) {
     return;
   }
   const external = await fetchExternalLiveQuote(underlying);
-  const quote = external || demoLiveQuote(underlying);
+  const quote = external || {
+    ...demoLiveQuote(underlying),
+    fallbackReason: "external-feed-not-configured-or-unavailable"
+  };
   sendJson(res, 200, quote);
 }
 
@@ -752,7 +818,18 @@ async function sendLiveChain(url, res) {
     sendJson(res, 404, { error: "Unknown live underlying." });
     return;
   }
-  const quote = await fetchExternalLiveQuote(underlying) || demoLiveQuote(underlying);
+  const externalQuote = await fetchExternalLiveQuote(underlying);
+  const quote = externalQuote || demoLiveQuote(underlying);
+  const externalChain = await fetchExternalLiveChain(underlying, quote);
+  if (externalChain?.rows?.length) {
+    sendJson(res, 200, {
+      underlying,
+      quote,
+      ...externalChain,
+      updatedAt: externalChain.updatedAt || quote.updatedAt
+    });
+    return;
+  }
   const meta = liveAssets[underlying];
   const atm = Math.round(quote.ltp / meta.step) * meta.step;
   const rows = [];
@@ -764,39 +841,193 @@ async function sendLiveChain(url, res) {
       put: liveOptionPremium("PE", strike, quote.ltp, meta.step)
     });
   }
-  sendJson(res, 200, { underlying, quote, atm, rows, updatedAt: quote.updatedAt });
+  sendJson(res, 200, {
+    underlying,
+    quote,
+    source: quote.source || "demo-live-paper",
+    fallbackReason: externalQuote
+      ? "external-chain-unavailable"
+      : "external-feed-not-configured-or-unavailable",
+    atm,
+    rows,
+    updatedAt: quote.updatedAt
+  });
 }
 
 async function fetchExternalLiveQuote(underlying) {
   const template = process.env.LIVE_QUOTE_URL;
   if (!template) return null;
   const meta = liveAssets[underlying];
-  const requestUrl = template
-    .replaceAll("{underlying}", encodeURIComponent(underlying))
-    .replaceAll("{symbol}", encodeURIComponent(underlying))
-    .replaceAll("{label}", encodeURIComponent(meta.label));
-  const headers = { "User-Agent": "Mozilla/5.0 MarketHistoryLab/1.0" };
-  if (process.env.LIVE_QUOTE_AUTH_HEADER) {
-    const [name, ...parts] = process.env.LIVE_QUOTE_AUTH_HEADER.split(":");
-    if (name && parts.length) headers[name.trim()] = parts.join(":").trim();
-  }
   try {
-    const raw = await requestText(new URL(requestUrl), headers);
+    const raw = await requestText(
+      new URL(templateLiveUrl(template, underlying)),
+      liveHeaders("quote")
+    );
     const json = JSON.parse(raw);
-    const ltp = Number(json.ltp ?? json.last_price ?? json.lastPrice ?? json.price ?? json.close);
-    if (!Number.isFinite(ltp)) return null;
+    const payload = pickObject(json.data, json.quote, json.result, json.payload, json);
+    if (!payload) return null;
+    const ltp = pickNumber(
+      payload.ltp,
+      payload.last_price,
+      payload.lastPrice,
+      payload.price,
+      payload.close,
+      payload.value
+    );
+    if (ltp === null) return null;
     return {
-      source: "external-live-feed",
+      source: liveProviderName(),
       underlying,
       label: meta.label,
       ltp,
-      change: Number(json.change ?? 0),
-      changePct: Number(json.changePct ?? json.change_percent ?? 0),
+      change: pickNumber(payload.change, payload.netChange, payload.change_value) || 0,
+      changePct: pickNumber(
+        payload.changePct,
+        payload.change_percent,
+        payload.changePercent,
+        payload.pChange
+      ) || 0,
+      updatedAt: String(payload.updatedAt || payload.timestamp || payload.time || new Date().toISOString())
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+async function fetchExternalLiveChain(underlying, quote) {
+  const template = process.env.LIVE_CHAIN_URL;
+  if (!template) return null;
+  try {
+    const raw = await requestText(
+      new URL(templateLiveUrl(template, underlying)),
+      liveHeaders("chain")
+    );
+    const json = JSON.parse(raw);
+    const items = findArrayPayload(json, ["rows", "chain", "optionChain", "data", "records"]);
+    if (!Array.isArray(items) || !items.length) return null;
+
+    const rowsByStrike = new Map();
+    for (const item of items) {
+      const strike = pickNumber(item.strike, item.strikePrice, item.strike_price);
+      if (strike === null) continue;
+      const row = rowsByStrike.get(strike) || { strike, call: null, put: null };
+      const callSource = pickObject(item.call, item.CE, item.ce);
+      const putSource = pickObject(item.put, item.PE, item.pe);
+
+      if (callSource) row.call = normalizeOptionSide(callSource, "CE", strike, quote.ltp);
+      if (putSource) row.put = normalizeOptionSide(putSource, "PE", strike, quote.ltp);
+
+      if (!callSource && !putSource) {
+        const type = String(item.type || item.optionType || item.instrument_type || "").toUpperCase();
+        const normalized = normalizeOptionSide(
+          item,
+          type.includes("PE") ? "PE" : "CE",
+          strike,
+          quote.ltp
+        );
+        if (normalized.type === "PE") row.put = normalized;
+        else row.call = normalized;
+      }
+      rowsByStrike.set(strike, row);
+    }
+
+    const rows = [...rowsByStrike.values()]
+      .sort((a, b) => a.strike - b.strike)
+      .map((row) => {
+        const callData = row.call || normalizeOptionSide({}, "CE", row.strike, quote.ltp);
+        const putData = row.put || normalizeOptionSide({}, "PE", row.strike, quote.ltp);
+        return {
+          strike: row.strike,
+          call: callData.ltp,
+          put: putData.ltp,
+          callData,
+          putData
+        };
+      });
+
+    if (!rows.length) return null;
+    return {
+      source: liveProviderName(),
+      atm: Math.round(quote.ltp / liveAssets[underlying].step) * liveAssets[underlying].step,
+      rows,
       updatedAt: new Date().toISOString()
     };
   } catch (error) {
     return null;
   }
+}
+
+function templateLiveUrl(template, underlying) {
+  const meta = liveAssets[underlying];
+  return template
+    .replaceAll("{underlying}", encodeURIComponent(underlying))
+    .replaceAll("{symbol}", encodeURIComponent(underlying))
+    .replaceAll("{label}", encodeURIComponent(meta.label));
+}
+
+function liveHeaders(kind) {
+  const headers = { "User-Agent": "Mozilla/5.0 MarketHistoryLab/1.0" };
+  if (process.env.LIVE_API_KEY) headers["X-API-Key"] = process.env.LIVE_API_KEY;
+  if (process.env.LIVE_API_TOKEN) headers.Authorization = `Bearer ${process.env.LIVE_API_TOKEN}`;
+  applyHeaderString(headers, process.env.LIVE_AUTH_HEADER);
+  applyHeaderString(
+    headers,
+    kind === "chain"
+      ? process.env.LIVE_CHAIN_AUTH_HEADER
+      : process.env.LIVE_QUOTE_AUTH_HEADER
+  );
+  return headers;
+}
+
+function applyHeaderString(headers, raw) {
+  if (!raw) return;
+  const [name, ...parts] = raw.split(":");
+  if (name && parts.length) headers[name.trim()] = parts.join(":").trim();
+}
+
+function pickObject(...values) {
+  return values.find((value) => value && typeof value === "object" && !Array.isArray(value)) || null;
+}
+
+function pickNumber(...values) {
+  for (const value of values) {
+    const number = Number(value);
+    if (Number.isFinite(number)) return number;
+  }
+  return null;
+}
+
+function findArrayPayload(source, keys) {
+  if (Array.isArray(source)) return source;
+  if (!source || typeof source !== "object") return null;
+  for (const key of keys) {
+    if (Array.isArray(source[key])) return source[key];
+  }
+  for (const value of Object.values(source)) {
+    const nested = findArrayPayload(value, keys);
+    if (nested) return nested;
+  }
+  return null;
+}
+
+function normalizeOptionSide(source, type, strike, spot) {
+  const fallback = liveOptionPremium(type, strike, spot, 50);
+  const ltp = pickNumber(
+    source.ltp,
+    source.last_price,
+    source.lastPrice,
+    source.price,
+    source.close
+  ) ?? fallback;
+  return {
+    type,
+    ltp,
+    iv: pickNumber(source.iv, source.impliedVolatility, source.implied_volatility) ?? 0,
+    oi: pickNumber(source.oi, source.openInterest, source.open_interest) ?? 0,
+    volume: pickNumber(source.volume, source.vol) ?? 0,
+    bid: pickNumber(source.bid, source.bidPrice, source.best_bid) ?? Math.max(0, ltp - 0.5),
+    ask: pickNumber(source.ask, source.askPrice, source.best_ask) ?? ltp + 0.5
+  };
 }
 
 function demoLiveQuote(underlying) {
