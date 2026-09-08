@@ -15,7 +15,7 @@ const mutableDataRoot = process.env.DATA_DIR || path.join(appRoot, "data");
 const dataRoot = path.join(mutableDataRoot, "imports");
 const usersPath = path.join(mutableDataRoot, "users.json");
 const bundledDataRoot = path.join(appRoot, "data");
-const appVersion = "real-market-v1-2026-06-07";
+const appVersion = "upstox-live-v2-2026-09-08";
 const cacheMs = 15 * 60 * 1000;
 const cache = new Map();
 const sessions = new Map();
@@ -36,11 +36,33 @@ const assets = {
 };
 
 const liveAssets = {
-  NIFTY: { label: "Nifty 50", base: 22450, step: 50 },
-  BANKNIFTY: { label: "Bank Nifty", base: 53710, step: 100 },
-  FINNIFTY: { label: "FinNifty", base: 21400, step: 50 },
-  SENSEX: { label: "Sensex", base: 74200, step: 100 }
+  NIFTY: {
+    label: "Nifty 50",
+    base: 22450,
+    step: 50,
+    upstoxKey: "NSE_INDEX|Nifty 50"
+  },
+  BANKNIFTY: {
+    label: "Bank Nifty",
+    base: 53710,
+    step: 100,
+    upstoxKey: "NSE_INDEX|Nifty Bank"
+  },
+  FINNIFTY: {
+    label: "FinNifty",
+    base: 21400,
+    step: 50,
+    upstoxKey: "NSE_INDEX|Nifty Fin Service"
+  },
+  SENSEX: {
+    label: "Sensex",
+    base: 74200,
+    step: 100,
+    upstoxKey: "BSE_INDEX|SENSEX"
+  }
 };
+const upstoxExpiryCache = new Map();
+let liveProviderLastError = "";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -548,12 +570,32 @@ async function sendDatasets(res) {
   sendJson(res, 200, { datasets, storage: "file" });
 }
 
+function upstoxAccessToken() {
+  return String(process.env.UPSTOX_ACCESS_TOKEN || "").trim();
+}
+
+function requestedLiveProvider() {
+  const explicit = String(process.env.LIVE_DATA_PROVIDER || "").trim().toLowerCase();
+  if (explicit) return explicit;
+  if (upstoxAccessToken()) return "upstox";
+  if (process.env.LIVE_QUOTE_URL || process.env.LIVE_CHAIN_URL) return "custom-http";
+  return "demo-live";
+}
+
+function isUpstoxLiveProvider() {
+  return requestedLiveProvider() === "upstox";
+}
+
 function liveQuoteConfigured() {
-  return Boolean(process.env.LIVE_QUOTE_URL);
+  return isUpstoxLiveProvider()
+    ? Boolean(upstoxAccessToken())
+    : Boolean(process.env.LIVE_QUOTE_URL);
 }
 
 function liveChainConfigured() {
-  return Boolean(process.env.LIVE_CHAIN_URL);
+  return isUpstoxLiveProvider()
+    ? Boolean(upstoxAccessToken())
+    : Boolean(process.env.LIVE_CHAIN_URL);
 }
 
 function liveProviderConfigured() {
@@ -561,7 +603,7 @@ function liveProviderConfigured() {
 }
 
 function liveProviderName() {
-  return process.env.LIVE_DATA_PROVIDER || (liveProviderConfigured() ? "custom-http" : "demo-live");
+  return requestedLiveProvider();
 }
 
 function liveRefreshSeconds() {
@@ -576,8 +618,14 @@ function liveProviderDetails() {
     configured: liveProviderConfigured(),
     quoteConfigured: liveQuoteConfigured(),
     chainConfigured: liveChainConfigured(),
+    expiryConfigured: Boolean(process.env.UPSTOX_EXPIRY_DATE),
+    lastError: liveProviderLastError || undefined,
     refreshSeconds: liveRefreshSeconds(),
-    mode: provider === "demo-live" ? "simulated-live-paper" : "external-live-feed"
+    mode: provider === "demo-live"
+      ? "simulated-live-paper"
+      : provider === "upstox"
+        ? "upstox-live-paper"
+        : "external-live-feed"
   };
 }
 
@@ -593,11 +641,19 @@ function sendLiveStatus(res) {
       "LIVE_CHAIN_URL",
       "LIVE_API_KEY",
       "LIVE_API_TOKEN",
-      "LIVE_AUTH_HEADER"
+      "LIVE_AUTH_HEADER",
+      "UPSTOX_ACCESS_TOKEN",
+      "UPSTOX_EXPIRY_DATE",
+      "UPSTOX_NIFTY_KEY",
+      "UPSTOX_BANKNIFTY_KEY",
+      "UPSTOX_FINNIFTY_KEY",
+      "UPSTOX_SENSEX_KEY"
     ],
-    note: details.configured
-      ? "External live feed configured. /api/live/test?underlying=NIFTY se provider test karo."
-      : "Demo live feed. Real market ke liye provider URL/API credentials configure karo."
+    note: details.provider === "upstox" && details.configured
+      ? "Upstox live feed configured. /api/live/test?underlying=NIFTY se quote aur option-chain test karo."
+      : details.configured
+        ? "External live feed configured. /api/live/test?underlying=NIFTY se provider test karo."
+        : "Demo live feed. Real market ke liye provider credentials configure karo."
   });
 }
 
@@ -855,6 +911,9 @@ async function sendLiveChain(url, res) {
 }
 
 async function fetchExternalLiveQuote(underlying) {
+  if (isUpstoxLiveProvider()) {
+    return fetchUpstoxLiveQuote(underlying);
+  }
   const template = process.env.LIVE_QUOTE_URL;
   if (!template) return null;
   const meta = liveAssets[underlying];
@@ -890,11 +949,15 @@ async function fetchExternalLiveQuote(underlying) {
       updatedAt: String(payload.updatedAt || payload.timestamp || payload.time || new Date().toISOString())
     };
   } catch (error) {
+    liveProviderLastError = error.message;
     return null;
   }
 }
 
 async function fetchExternalLiveChain(underlying, quote) {
+  if (isUpstoxLiveProvider()) {
+    return fetchUpstoxLiveChain(underlying, quote);
+  }
   const template = process.env.LIVE_CHAIN_URL;
   if (!template) return null;
   try {
@@ -953,6 +1016,131 @@ async function fetchExternalLiveChain(underlying, quote) {
       updatedAt: new Date().toISOString()
     };
   } catch (error) {
+    liveProviderLastError = error.message;
+    return null;
+  }
+}
+
+function upstoxInstrumentKey(underlying) {
+  const envKey = `UPSTOX_${underlying}_KEY`;
+  return String(process.env[envKey] || liveAssets[underlying]?.upstoxKey || "").trim();
+}
+
+function upstoxHeaders() {
+  const token = upstoxAccessToken();
+  if (!token) throw new Error("UPSTOX_ACCESS_TOKEN missing hai.");
+  return {
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${token}`
+  };
+}
+
+async function requestUpstoxJson(pathname, params = {}) {
+  const url = new URL(`https://api.upstox.com${pathname}`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  }
+  const raw = await requestText(url, upstoxHeaders());
+  const json = JSON.parse(raw);
+  if (json.status && String(json.status).toLowerCase() === "error") {
+    throw new Error(json.errors?.[0]?.message || json.message || "Upstox API error.");
+  }
+  return json;
+}
+
+async function fetchUpstoxLiveQuote(underlying) {
+  const meta = liveAssets[underlying];
+  const instrumentKey = upstoxInstrumentKey(underlying);
+  if (!instrumentKey) return null;
+  try {
+    const json = await requestUpstoxJson("/v3/market-quote/quotes", { instrument_key: instrumentKey });
+    const data = json.data || {};
+    const payload = data[instrumentKey] || Object.values(data)[0];
+    if (!payload || typeof payload !== "object") throw new Error("Upstox quote response empty hai.");
+    const ltp = pickNumber(payload.last_price, payload.ltp, payload.close);
+    if (ltp === null) throw new Error("Upstox response me LTP nahi mila.");
+    const close = pickNumber(payload.ohlc?.close, payload.prev_close_price, payload.cp);
+    const change = pickNumber(payload.net_change, payload.change) ?? (close === null ? 0 : round(ltp - close, 2));
+    const changePct = pickNumber(payload.change_percent, payload.p_change, payload.pChange)
+      ?? (close ? round((change / close) * 100, 2) : 0);
+    liveProviderLastError = "";
+    return {
+      source: "upstox",
+      underlying,
+      label: meta.label,
+      instrumentKey,
+      ltp,
+      change,
+      changePct,
+      open: pickNumber(payload.ohlc?.open),
+      high: pickNumber(payload.ohlc?.high),
+      low: pickNumber(payload.ohlc?.low),
+      close,
+      volume: pickNumber(payload.volume, payload.ohlc?.volume) ?? 0,
+      updatedAt: String(payload.ohlc?.ts || payload.timestamp || new Date().toISOString())
+    };
+  } catch (error) {
+    liveProviderLastError = `Upstox quote: ${error.message}`;
+    return null;
+  }
+}
+
+async function upstoxExpiryDate(underlying) {
+  const configured = String(process.env[`UPSTOX_${underlying}_EXPIRY_DATE`] || process.env.UPSTOX_EXPIRY_DATE || "").trim();
+  if (configured) return configured;
+  const cached = upstoxExpiryCache.get(underlying);
+  if (cached && cached.expiresAt > Date.now()) return cached.expiryDate;
+
+  const instrumentKey = upstoxInstrumentKey(underlying);
+  const json = await requestUpstoxJson("/v2/option/contract", { instrument_key: instrumentKey });
+  const contracts = Array.isArray(json.data) ? json.data : [];
+  const today = new Date().toISOString().slice(0, 10);
+  const expiryDate = contracts
+    .map((contract) => String(contract.expiry || contract.expiry_date || "").slice(0, 10))
+    .filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= today)
+    .sort()[0];
+  if (!expiryDate) throw new Error("Upstox se option expiry nahi mili. UPSTOX_EXPIRY_DATE add karo.");
+  upstoxExpiryCache.set(underlying, { expiryDate, expiresAt: Date.now() + 6 * 60 * 60 * 1000 });
+  return expiryDate;
+}
+
+async function fetchUpstoxLiveChain(underlying, quote) {
+  try {
+    const instrumentKey = upstoxInstrumentKey(underlying);
+    const expiryDate = await upstoxExpiryDate(underlying);
+    const json = await requestUpstoxJson("/v2/option/chain", {
+      instrument_key: instrumentKey,
+      expiry_date: expiryDate
+    });
+    const items = Array.isArray(json.data) ? json.data : [];
+    const rows = items
+      .map((item) => {
+        const strike = pickNumber(item.strike_price, item.strike);
+        if (strike === null) return null;
+        const callData = normalizeOptionSide(item.call_options?.market_data || item.call_options || {}, "CE", strike, quote.ltp);
+        const putData = normalizeOptionSide(item.put_options?.market_data || item.put_options || {}, "PE", strike, quote.ltp);
+        const callGreeks = item.call_options?.option_greeks || {};
+        const putGreeks = item.put_options?.option_greeks || {};
+        callData.iv = pickNumber(callGreeks.iv, callData.iv) ?? 0;
+        putData.iv = pickNumber(putGreeks.iv, putData.iv) ?? 0;
+        return { strike, call: callData.ltp, put: putData.ltp, callData, putData };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.strike - b.strike);
+    if (!rows.length) throw new Error("Upstox option chain response empty hai.");
+    liveProviderLastError = "";
+    return {
+      source: "upstox",
+      expiryDate,
+      atm: Math.round(quote.ltp / liveAssets[underlying].step) * liveAssets[underlying].step,
+      rows,
+      updatedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    liveProviderLastError = `Upstox chain: ${error.message}`;
     return null;
   }
 }
