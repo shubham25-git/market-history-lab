@@ -1628,6 +1628,12 @@
         user: null
       };
 
+      const LIVE_QUOTE_REFRESH_MS = 1000;
+      const LIVE_CHAIN_REFRESH_EVERY = 3;
+      let liveRefreshTimer = null;
+      let liveRequestInFlight = false;
+      let liveRefreshCount = 0;
+
       const el = {
         nav: document.querySelector("#nav"),
         homeHero: document.querySelector("#homeHero"),
@@ -1727,6 +1733,16 @@
         loadDatasets();
         loadCurrentUser();
         localStorage.setItem("mhl_broker_session", state.brokerSession);
+        startLiveRefresh();
+      }
+
+      function startLiveRefresh() {
+        if (liveRefreshTimer) window.clearInterval(liveRefreshTimer);
+        liveRefreshTimer = window.setInterval(() => {
+          if (state.page !== "simulator" || document.visibilityState !== "visible") return;
+          liveRefreshCount += 1;
+          refreshLiveFeed({ refreshChain: liveRefreshCount % LIVE_CHAIN_REFRESH_EVERY === 0 });
+        }, LIVE_QUOTE_REFRESH_MS);
       }
 
       function wire() {
@@ -1744,7 +1760,11 @@
         });
         el.asset.addEventListener("change", () => {
           state.asset = el.asset.value;
+          state.liveQuote = null;
+          state.liveChain = [];
+          liveRefreshCount = 0;
           renderAll();
+          refreshLiveFeed({ refreshChain: true });
         });
         document.querySelector("#clearBasket").addEventListener("click", () => {
           state.basket = [];
@@ -2439,25 +2459,39 @@
         `;
       }
 
-      async function refreshLiveFeed() {
+      async function refreshLiveFeed(options = {}) {
+        if (liveRequestInFlight) return;
+        const refreshChain = options.refreshChain ?? (!state.liveChain.length || liveRefreshCount % LIVE_CHAIN_REFRESH_EVERY === 0);
+        liveRequestInFlight = true;
         try {
           const quoteResponse = await fetch(`/api/live/quote?underlying=${encodeURIComponent(state.asset)}`);
-          const chainResponse = await fetch(`/api/live/chain?underlying=${encodeURIComponent(state.asset)}`);
-          if (!quoteResponse.ok || !chainResponse.ok) throw new Error("Live feed API unavailable");
+          if (!quoteResponse.ok) throw new Error("Live quote API unavailable");
           const quote = await quoteResponse.json();
-          const chain = await chainResponse.json();
+          const chainResponse = refreshChain
+            ? await fetch(`/api/live/chain?underlying=${encodeURIComponent(state.asset)}`)
+            : null;
+          if (chainResponse && !chainResponse.ok) throw new Error("Live option-chain API unavailable");
+          const chain = chainResponse ? await chainResponse.json() : null;
           state.liveQuote = quote;
-          state.liveChain = chain.rows || [];
+          if (chain) state.liveChain = chain.rows || [];
           el.liveSummary.innerHTML = `
             <div class="summary-item"><span>Source</span><strong>${quote.source === "demo-live-paper" ? "Demo live paper feed" : "External live feed"}</strong></div>
             <div class="summary-item"><span>${quote.label}</span><strong>${num(quote.ltp, 2)}</strong></div>
             <div class="summary-item"><span>Change</span><strong class="${quote.change >= 0 ? "positive" : "negative"}">${num(quote.change, 2)} (${num(quote.changePct, 2)}%)</strong></div>
-            <div class="summary-item"><span>Updated</span><strong>${new Date(quote.updatedAt).toLocaleTimeString("en-IN")}</strong></div>
+            <div class="summary-item"><span>Updated</span><strong>${formatLiveTime(quote.updatedAt)}</strong></div>
           `;
           renderChart();
         } catch (error) {
           el.liveSummary.innerHTML = `<div class="summary-item"><span>Live feed</span><strong>${error.message}</strong></div>`;
+        } finally {
+          liveRequestInFlight = false;
         }
+      }
+
+      function formatLiveTime(value) {
+        const numeric = Number(value);
+        const date = Number.isFinite(numeric) && numeric > 1000000000 ? new Date(numeric) : new Date(value);
+        return Number.isNaN(date.getTime()) ? "Just now" : date.toLocaleTimeString("en-IN");
       }
 
       async function placePaperTrade() {
