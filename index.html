@@ -875,7 +875,15 @@
                 <h2>Live Market Dashboard</h2>
                 <p>Live index quote aur option-chain snapshot.</p>
               </div>
-              <button class="secondary" data-action="refresh-live-dashboard" type="button">Refresh Live Data</button>
+              <div class="tool-row" style="margin: 0; gap: 10px;">
+                <select id="liveDashboardAsset" aria-label="Live market index">
+                  <option value="BANKNIFTY">Bank Nifty</option>
+                  <option value="NIFTY">Nifty 50</option>
+                  <option value="FINNIFTY">FinNifty</option>
+                  <option value="SENSEX">Sensex</option>
+                </select>
+                <button class="secondary" data-action="refresh-live-dashboard" type="button">Refresh Live Data</button>
+              </div>
             </div>
             <div class="panel-body">
               <div class="metric-row" id="liveDashboardMetrics"></div>
@@ -1731,6 +1739,7 @@
         labClock: document.querySelector("#labClock"),
         marginSummary: document.querySelector("#marginSummary"),
         dashboardSummary: document.querySelector("#dashboardSummary"),
+        liveDashboardAsset: document.querySelector("#liveDashboardAsset"),
         liveDashboardMetrics: document.querySelector("#liveDashboardMetrics"),
         liveDashboardDetails: document.querySelector("#liveDashboardDetails"),
         liveDashboardChain: document.querySelector("#liveDashboardChain"),
@@ -1778,14 +1787,8 @@
             handleAction(actionButton.dataset.action);
           }
         });
-        el.asset.addEventListener("change", () => {
-          state.asset = el.asset.value;
-          state.liveQuote = null;
-          state.liveChain = [];
-          liveRefreshCount = 0;
-          renderAll();
-          refreshLiveFeed({ refreshChain: true });
-        });
+        el.asset.addEventListener("change", () => selectLiveAsset(el.asset.value));
+        el.liveDashboardAsset?.addEventListener("change", () => selectLiveAsset(el.liveDashboardAsset.value));
         document.querySelector("#clearBasket").addEventListener("click", () => {
           state.basket = [];
           renderAll();
@@ -1851,6 +1854,18 @@
         el.sendOtp.addEventListener("click", requestOtp);
         el.authSubmit.addEventListener("click", submitAuth);
         el.logoutBtn.addEventListener("click", logout);
+      }
+
+      function selectLiveAsset(asset) {
+        if (!data[asset]) return;
+        state.asset = asset;
+        el.asset.value = asset;
+        if (el.liveDashboardAsset) el.liveDashboardAsset.value = asset;
+        state.liveQuote = null;
+        state.liveChain = [];
+        liveRefreshCount = 0;
+        renderAll();
+        refreshLiveFeed({ refreshChain: true });
       }
 
       function showPage(page) {
@@ -2287,6 +2302,7 @@
 
       function renderLiveDashboard() {
         if (!el.liveDashboardMetrics || !el.liveDashboardDetails || !el.liveDashboardChain) return;
+        if (el.liveDashboardAsset) el.liveDashboardAsset.value = state.asset;
         const quote = state.liveQuote;
         if (!quote) {
           el.liveDashboardMetrics.innerHTML = `
