@@ -869,6 +869,23 @@
         </section>
 
         <section class="page" id="page-dashboard">
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2>Live Market Dashboard</h2>
+                <p>Live index quote aur option-chain snapshot.</p>
+              </div>
+              <button class="secondary" data-action="refresh-live-dashboard" type="button">Refresh Live Data</button>
+            </div>
+            <div class="panel-body">
+              <div class="metric-row" id="liveDashboardMetrics"></div>
+              <div class="grid-2">
+                <div class="summary-list" id="liveDashboardDetails"></div>
+                <div class="summary-list" id="liveDashboardChain"></div>
+              </div>
+            </div>
+          </section>
+
           <div class="grid-2">
             <section class="panel">
               <div class="panel-head">
@@ -1714,6 +1731,9 @@
         labClock: document.querySelector("#labClock"),
         marginSummary: document.querySelector("#marginSummary"),
         dashboardSummary: document.querySelector("#dashboardSummary"),
+        liveDashboardMetrics: document.querySelector("#liveDashboardMetrics"),
+        liveDashboardDetails: document.querySelector("#liveDashboardDetails"),
+        liveDashboardChain: document.querySelector("#liveDashboardChain"),
         savedStrategies: document.querySelector("#savedStrategies"),
         journalNote: document.querySelector("#journalNote"),
         journalList: document.querySelector("#journalList"),
@@ -1739,7 +1759,7 @@
       function startLiveRefresh() {
         if (liveRefreshTimer) window.clearInterval(liveRefreshTimer);
         liveRefreshTimer = window.setInterval(() => {
-          if (state.page !== "simulator" || document.visibilityState !== "visible") return;
+          if (!["simulator", "dashboard"].includes(state.page) || document.visibilityState !== "visible") return;
           liveRefreshCount += 1;
           refreshLiveFeed({ refreshChain: liveRefreshCount % LIVE_CHAIN_REFRESH_EVERY === 0 });
         }, LIVE_QUOTE_REFRESH_MS);
@@ -1839,7 +1859,10 @@
         document.querySelectorAll("#nav [data-page]").forEach(item => item.classList.toggle("active", item.dataset.page === page));
         el.homeHero.style.display = page === "home" ? "grid" : "none";
         if (page === "analytics") renderAnalytics();
-        if (page === "dashboard") renderDashboard();
+        if (page === "dashboard") {
+          renderDashboard();
+          refreshLiveFeed({ refreshChain: true });
+        }
         if (page === "scanner") {
           renderScanner();
           renderFinder();
@@ -2213,6 +2236,7 @@
         if (action === "refresh-greeks") renderGreeks();
         if (action === "refresh-risk") renderRisk();
         if (action === "refresh-admin") renderAdmin();
+        if (action === "refresh-live-dashboard") refreshLiveFeed({ refreshChain: true });
       }
 
       function saveCurrentStrategy() {
@@ -2243,6 +2267,7 @@
 
       function renderDashboard() {
         if (!el.dashboardSummary) return;
+        renderLiveDashboard();
         const saved = readStore("mhl_saved_strategies");
         const notes = readStore("mhl_journal_notes");
         const trades = readStore("mhl_paper_trades");
@@ -2258,6 +2283,70 @@
         el.journalList.innerHTML = notes.length
           ? notes.map(item => `<div class="summary-item"><span>${item.createdAt}</span><strong>${item.text}</strong></div>`).join("")
           : `<div class="summary-item"><span>Status</span><strong>No notes yet</strong></div>`;
+      }
+
+      function renderLiveDashboard() {
+        if (!el.liveDashboardMetrics || !el.liveDashboardDetails || !el.liveDashboardChain) return;
+        const quote = state.liveQuote;
+        if (!quote) {
+          el.liveDashboardMetrics.innerHTML = `
+            <div class="metric"><span>Live feed</span><strong>Connecting...</strong></div>
+            <div class="metric"><span>Index</span><strong>${state.asset}</strong></div>
+            <div class="metric"><span>Option chain</span><strong>Loading...</strong></div>
+            <div class="metric"><span>Refresh</span><strong>1 second</strong></div>
+          `;
+          el.liveDashboardDetails.innerHTML = `<div class="summary-item"><span>Status</span><strong>Waiting for Upstox data</strong></div>`;
+          el.liveDashboardChain.innerHTML = `<div class="summary-item"><span>Chain</span><strong>Waiting for strikes</strong></div>`;
+          return;
+        }
+
+        const market = indiaMarketStatus();
+        const change = Number(quote.change || 0);
+        const chain = state.liveChain || [];
+        const atmRow = chain.reduce((closest, row) => (
+          !closest || Math.abs(Number(row.strike) - quote.ltp) < Math.abs(Number(closest.strike) - quote.ltp) ? row : closest
+        ), null);
+        const totalCallOi = chain.reduce((sum, row) => sum + Number(row.callData?.oi || 0), 0);
+        const totalPutOi = chain.reduce((sum, row) => sum + Number(row.putData?.oi || 0), 0);
+        const pcr = totalCallOi ? totalPutOi / totalCallOi : null;
+        const maxCallOi = chain.reduce((highest, row) => (!highest || Number(row.callData?.oi || 0) > Number(highest.callData?.oi || 0) ? row : highest), null);
+        const maxPutOi = chain.reduce((highest, row) => (!highest || Number(row.putData?.oi || 0) > Number(highest.putData?.oi || 0) ? row : highest), null);
+
+        el.liveDashboardMetrics.innerHTML = `
+          <div class="metric"><span>${quote.label || state.asset} LTP</span><strong>${num(quote.ltp, 2)}</strong></div>
+          <div class="metric"><span>Day change</span><strong class="${change >= 0 ? "positive" : "negative"}">${change >= 0 ? "+" : ""}${num(change, 2)} (${num(quote.changePct, 2)}%)</strong></div>
+          <div class="metric"><span>Market status</span><strong class="${market.open ? "positive" : "negative"}">${market.label}</strong></div>
+          <div class="metric"><span>Live source</span><strong>${quote.source === "upstox" ? "Upstox" : "Demo feed"}</strong></div>
+        `;
+        el.liveDashboardDetails.innerHTML = `
+          <div class="summary-item"><span>Open</span><strong>${quote.open === null || quote.open === undefined ? "-" : num(quote.open, 2)}</strong></div>
+          <div class="summary-item"><span>Day high</span><strong>${quote.high === null || quote.high === undefined ? "-" : num(quote.high, 2)}</strong></div>
+          <div class="summary-item"><span>Day low</span><strong>${quote.low === null || quote.low === undefined ? "-" : num(quote.low, 2)}</strong></div>
+          <div class="summary-item"><span>Last feed update</span><strong>${formatLiveTime(quote.updatedAt)}</strong></div>
+        `;
+        el.liveDashboardChain.innerHTML = `
+          <div class="summary-item"><span>Option-chain strikes</span><strong>${chain.length}</strong></div>
+          <div class="summary-item"><span>ATM strike</span><strong>${atmRow ? num(atmRow.strike, 0) : "-"}</strong></div>
+          <div class="summary-item"><span>ATM CE / PE</span><strong>${atmRow ? `${num(atmRow.call, 2)} / ${num(atmRow.put, 2)}` : "-"}</strong></div>
+          <div class="summary-item"><span>PCR (OI)</span><strong>${pcr === null ? "-" : num(pcr, 2)}</strong></div>
+          <div class="summary-item"><span>Highest CE OI strike</span><strong>${maxCallOi ? num(maxCallOi.strike, 0) : "-"}</strong></div>
+          <div class="summary-item"><span>Highest PE OI strike</span><strong>${maxPutOi ? num(maxPutOi.strike, 0) : "-"}</strong></div>
+        `;
+      }
+
+      function indiaMarketStatus() {
+        const parts = new Intl.DateTimeFormat("en-US", {
+          timeZone: "Asia/Kolkata",
+          weekday: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23"
+        }).formatToParts(new Date());
+        const value = (type) => parts.find((part) => part.type === type)?.value || "";
+        const minuteOfDay = Number(value("hour")) * 60 + Number(value("minute"));
+        const weekday = value("weekday");
+        const open = !["Sat", "Sun"].includes(weekday) && minuteOfDay >= 555 && minuteOfDay < 930;
+        return { open, label: open ? "Scheduled open" : "Closed" };
       }
 
       function renderScanner(force = false) {
@@ -2480,6 +2569,7 @@
             <div class="summary-item"><span>Change</span><strong class="${quote.change >= 0 ? "positive" : "negative"}">${num(quote.change, 2)} (${num(quote.changePct, 2)}%)</strong></div>
             <div class="summary-item"><span>Updated</span><strong>${formatLiveTime(quote.updatedAt)}</strong></div>
           `;
+          renderLiveDashboard();
           renderChart();
         } catch (error) {
           el.liveSummary.innerHTML = `<div class="summary-item"><span>Live feed</span><strong>${error.message}</strong></div>`;
